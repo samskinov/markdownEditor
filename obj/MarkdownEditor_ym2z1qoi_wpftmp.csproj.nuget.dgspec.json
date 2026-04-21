@@ -1,0 +1,69 @@
+{
+  "format": 1,
+  "restore": {
+    "/opt/CascadeProjects/cSharp/MarkdownEditor/MarkdownEditor.csproj": {}
+  },
+  "projects": {
+    "/opt/CascadeProjects/cSharp/MarkdownEditor/MarkdownEditor.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/opt/CascadeProjects/cSharp/MarkdownEditor/MarkdownEditor.csproj",
+        "projectName": "MarkdownEditor",
+        "projectPath": "/opt/CascadeProjects/cSharp/MarkdownEditor/MarkdownEditor.csproj",
+        "packagesPath": "/home/sam/.nuget/packages/",
+        "outputPath": "/opt/CascadeProjects/cSharp/MarkdownEditor/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/sam/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net48"
+        ],
+        "sources": {
+          "/usr/lib/dotnet/library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net48": {
+            "targetAlias": "net48",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net48": {
+          "targetAlias": "net48",
+          "dependencies": {
+            "AvalonEdit": {
+              "target": "Package",
+              "version": "[6.3.0.90, )"
+            },
+            "Microsoft.NETFramework.ReferenceAssemblies": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.0.3, )",
+              "autoReferenced": true
+            },
+            "Microsoft.NETFramework.ReferenceAssemblies.net48": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.0.3, )"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.106/RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
