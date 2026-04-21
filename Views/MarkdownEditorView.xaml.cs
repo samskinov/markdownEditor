@@ -1,10 +1,8 @@
 using System;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
-using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Search;
 using MarkdownEditor.Services;
@@ -17,8 +15,6 @@ namespace MarkdownEditor.Views
         private MarkdownEditorViewModel? _viewModel;
         private bool _isUpdatingFromViewModel;
         private PreviewHttpServer? _previewServer;
-        private MermaidHelpWindow? _mermaidHelpWindow;
-        private MarkdownHelpWindow? _markdownHelpWindow;
         private FoldingManager? _foldingManager;
         private MarkdownFoldingStrategy? _foldingStrategy;
         private readonly DispatcherTimer _foldingTimer;
@@ -247,25 +243,11 @@ namespace MarkdownEditor.Views
 
         // ─── Help Windows ────────────────────────────────────
 
-        private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (_viewModel == null) return;
 
-            if (e.PropertyName == nameof(MarkdownEditorViewModel.IsMermaidHelpOpen))
-            {
-                if (_viewModel.IsMermaidHelpOpen)
-                    ShowMermaidHelp();
-                else
-                    _mermaidHelpWindow?.Close();
-            }
-            else if (e.PropertyName == nameof(MarkdownEditorViewModel.IsMarkdownHelpOpen))
-            {
-                if (_viewModel.IsMarkdownHelpOpen)
-                    ShowMarkdownHelp();
-                else
-                    _markdownHelpWindow?.Close();
-            }
-            else if (e.PropertyName == nameof(MarkdownEditorViewModel.MarkdownText))
+            if (e.PropertyName == nameof(MarkdownEditorViewModel.MarkdownText))
             {
                 if (_isUpdatingFromViewModel) return;
                 var vmText = _viewModel.MarkdownText;
@@ -276,38 +258,6 @@ namespace MarkdownEditor.Views
                     _isUpdatingFromViewModel = false;
                 }
             }
-        }
-
-        private void ShowMermaidHelp()
-        {
-            if (_mermaidHelpWindow != null) return;
-
-            var owner = Window.GetWindow(this);
-            _mermaidHelpWindow = new MermaidHelpWindow();
-            if (owner != null) _mermaidHelpWindow.Owner = owner;
-            _mermaidHelpWindow.InsertRequested += code => InsertTextAtCursor(code);
-            _mermaidHelpWindow.Closed += (_, __) =>
-            {
-                _mermaidHelpWindow = null;
-                if (_viewModel != null) _viewModel.IsMermaidHelpOpen = false;
-            };
-            _mermaidHelpWindow.Show();
-        }
-
-        private void ShowMarkdownHelp()
-        {
-            if (_markdownHelpWindow != null) return;
-
-            var owner = Window.GetWindow(this);
-            _markdownHelpWindow = new MarkdownHelpWindow();
-            if (owner != null) _markdownHelpWindow.Owner = owner;
-            _markdownHelpWindow.InsertRequested += syntax => InsertTextAtCursor(syntax);
-            _markdownHelpWindow.Closed += (_, __) =>
-            {
-                _markdownHelpWindow = null;
-                if (_viewModel != null) _viewModel.IsMarkdownHelpOpen = false;
-            };
-            _markdownHelpWindow.Show();
         }
 
         // ─── TOC Navigation ──────────────────────────────────

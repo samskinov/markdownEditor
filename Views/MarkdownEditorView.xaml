@@ -167,112 +167,14 @@
                 <Border />
             </DockPanel>
         </Border>
-
-                <!-- Quote / Code -->
-                <Button Style="{StaticResource ToolbarButtonStyle}"
-                        Command="{Binding InsertQuoteCommand}"
-                        ToolTip="Quote">
-                    <TextBlock Text="❝" FontSize="16" />
-                </Button>
-                <Button Style="{StaticResource ToolbarButtonStyle}"
-                        Command="{Binding InsertInlineCodeCommand}"
-                        ToolTip="Inline code">
-                    <TextBlock Text="&lt;/&gt;" FontSize="11" FontFamily="Consolas" FontWeight="SemiBold" />
-                </Button>
-                <Button Style="{StaticResource ToolbarButtonStyle}"
-                        Command="{Binding InsertCodeBlockCommand}"
-                        ToolTip="Code block">
-                    <TextBlock Text="{}{  }" FontSize="12" FontFamily="Consolas" FontWeight="Bold" />
-                </Button>
-
-                <Border Style="{StaticResource ToolbarSeparatorStyle}" />
-
-                <!-- Link / Image / Table / HR -->
-                <Button Style="{StaticResource ToolbarButtonStyle}"
-                        Command="{Binding InsertLinkCommand}"
-                        ToolTip="Link (Ctrl+K)">
-                    <TextBlock Text="🔗" FontSize="14" />
-                </Button>
-                <Button Style="{StaticResource ToolbarButtonStyle}"
-                        Command="{Binding InsertImageCommand}"
-                        ToolTip="Image">
-                    <TextBlock Text="🖼" FontSize="14" />
-                </Button>
-                <Button Style="{StaticResource ToolbarButtonStyle}"
-                        Command="{Binding InsertTableCommand}"
-                        ToolTip="Table">
-                    <TextBlock Text="▦" FontSize="16" />
-                </Button>
-                <Button Style="{StaticResource ToolbarButtonStyle}"
-                        Command="{Binding InsertHorizontalRuleCommand}"
-                        ToolTip="Horizontal rule">
-                    <TextBlock Text="―" FontSize="15" />
-                </Button>
-
-                <Border Style="{StaticResource ToolbarSeparatorStyle}" />
-
-                <!-- Mermaid -->
-                <Button Style="{StaticResource ToolbarButtonStyle}"
-                        Command="{Binding InsertMermaidBlockCommand}"
-                        ToolTip="Mermaid block">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="◈" FontSize="14" Margin="0,0,4,0" />
-                        <TextBlock Text="Mermaid" FontSize="12" />
-                    </StackPanel>
-                </Button>
-
-                <Border Style="{StaticResource ToolbarSeparatorStyle}" />
-
-                <!-- TOC -->
-                <ToggleButton Style="{StaticResource ToolbarToggleButtonStyle}"
-                              IsChecked="{Binding IsTocOpen, Mode=TwoWay}"
-                              ToolTip="Table of Contents">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="☰" FontSize="13" Margin="0,0,4,0" />
-                        <TextBlock Text="TOC" FontSize="12" FontWeight="SemiBold" />
-                    </StackPanel>
-                </ToggleButton>
-
-                <Border Style="{StaticResource ToolbarSeparatorStyle}" />
-
-                <!-- Help -->
-                <Button Style="{StaticResource ToolbarButtonStyle}"
-                        Command="{Binding ToggleMarkdownHelpCommand}"
-                        ToolTip="Markdown help">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="📝" FontSize="13" Margin="0,0,4,0" />
-                        <TextBlock Text="MD" FontSize="12" FontWeight="SemiBold" />
-                    </StackPanel>
-                </Button>
-                <Button Style="{StaticResource ToolbarButtonStyle}"
-                        Command="{Binding ToggleMermaidHelpCommand}"
-                        ToolTip="Mermaid help">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="📊" FontSize="13" Margin="0,0,4,0" />
-                        <TextBlock Text="🛈" FontSize="12" />
-                    </StackPanel>
-                </Button>
-
-                <Border Style="{StaticResource ToolbarSeparatorStyle}" />
-
-                <!-- Preview in browser -->
-                <Button Style="{StaticResource ToolbarAccentButtonStyle}"
-                        Command="{Binding OpenPreviewCommand}"
-                        ToolTip="Open preview in browser">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🌐" FontSize="14" Margin="0,0,5,0" />
-                        <TextBlock Text="Preview" FontSize="12" />
-                    </StackPanel>
-                </Button>
-            </WrapPanel>
-        </Border>
-
         <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
         <Grid Grid.Row="1" Margin="4">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="280" />
             </Grid.ColumnDefinitions>
 
             <!-- Editor -->
@@ -370,6 +272,145 @@
                                                    TextTrimming="CharacterEllipsis"
                                                    Margin="{Binding Level, Converter={x:Static svc:HeadingLevelToMarginConverter.Instance}}" />
                                     </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- Help panel splitter -->
+            <GridSplitter Grid.Column="3"
+                          Style="{StaticResource ModernGridSplitterStyle}"
+                          Visibility="{Binding IsAnyHelpOpen, Converter={StaticResource BoolToVis}}" />
+
+            <!-- Inline Help Panel (Markdown + Mermaid tabs) -->
+            <Border Grid.Column="4"
+                    Background="{StaticResource SurfaceBrush}"
+                    CornerRadius="8"
+                    BorderBrush="{StaticResource BorderLightBrush}"
+                    BorderThickness="1"
+                    Visibility="{Binding IsAnyHelpOpen, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Tab header row -->
+                    <DockPanel Grid.Row="0"
+                               Background="{StaticResource BackgroundBrush}"
+                               LastChildFill="False">
+                        <ToggleButton DockPanel.Dock="Left"
+                                      Style="{StaticResource ToolbarToggleButtonStyle}"
+                                      IsChecked="{Binding IsMarkdownHelpOpen, Mode=TwoWay}"
+                                      Margin="6,4,2,4"
+                                      Padding="10,5"
+                                      ToolTip="Markdown syntax reference">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📝" FontSize="12" Margin="0,0,4,0" />
+                                <TextBlock Text="Markdown" FontSize="12" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </ToggleButton>
+                        <ToggleButton DockPanel.Dock="Left"
+                                      Style="{StaticResource ToolbarToggleButtonStyle}"
+                                      IsChecked="{Binding IsMermaidHelpOpen, Mode=TwoWay}"
+                                      Margin="2,4,6,4"
+                                      Padding="10,5"
+                                      ToolTip="Mermaid diagram examples">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📊" FontSize="12" Margin="0,0,4,0" />
+                                <TextBlock Text="Mermaid" FontSize="12" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </ToggleButton>
+                    </DockPanel>
+
+                    <!-- Search box -->
+                    <TextBox Grid.Row="1"
+                             Margin="10,4,10,4"
+                             Tag="🔍 Filter…"
+                             Style="{StaticResource HelpSearchBoxStyle}">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox" BasedOn="{StaticResource HelpSearchBoxStyle}">
+                                <Style.Triggers>
+                                    <!-- Route Text to the active VM -->
+                                    <DataTrigger Binding="{Binding IsMarkdownHelpOpen}" Value="True">
+                                        <Setter Property="Text" Value="{Binding MarkdownHelpVM.FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsMermaidHelpOpen}" Value="True">
+                                        <Setter Property="Text" Value="{Binding MermaidHelpVM.FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+
+                    <!-- Markdown snippets list -->
+                    <ScrollViewer Grid.Row="2"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  Padding="6,0"
+                                  Visibility="{Binding IsMarkdownHelpOpen, Converter={StaticResource BoolToVis}}">
+                        <ItemsControl ItemsSource="{Binding MarkdownHelpVM.FilteredSnippets}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource HelpItemBorderStyle}">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <Button DockPanel.Dock="Right"
+                                                        Content="Insert"
+                                                        Style="{StaticResource HelpInsertButtonStyle}"
+                                                        Command="{Binding DataContext.MarkdownHelpVM.InsertSnippetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        VerticalAlignment="Top"
+                                                        Margin="8,0,0,0" />
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Name}" Style="{StaticResource HelpItemTitleStyle}" />
+                                                    <TextBlock Text="{Binding Description}" Style="{StaticResource HelpItemDescStyle}" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                            <TextBlock Text="{Binding Syntax}"
+                                                       Style="{StaticResource HelpCodeBlockStyle}"
+                                                       MaxHeight="80"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <!-- Mermaid examples list -->
+                    <ScrollViewer Grid.Row="2"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  Padding="6,0"
+                                  Visibility="{Binding IsMermaidHelpOpen, Converter={StaticResource BoolToVis}}">
+                        <ItemsControl ItemsSource="{Binding MermaidHelpVM.FilteredExamples}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource HelpItemBorderStyle}">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <Button DockPanel.Dock="Right"
+                                                        Content="Insert"
+                                                        Style="{StaticResource HelpInsertButtonStyle}"
+                                                        Command="{Binding DataContext.MermaidHelpVM.InsertExampleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        VerticalAlignment="Top"
+                                                        Margin="8,0,0,0" />
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Name}" Style="{StaticResource HelpItemTitleStyle}" />
+                                                    <TextBlock Text="{Binding Description}" Style="{StaticResource HelpItemDescStyle}" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                            <TextBlock Text="{Binding Code}"
+                                                       Style="{StaticResource HelpCodeBlockStyle}"
+                                                       MaxHeight="120"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
