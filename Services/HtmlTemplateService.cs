@@ -222,10 +222,27 @@ _renderer.listitem = function(text, task, checked) {
 
 marked.setOptions({ renderer: _renderer });
 
+function sanitizeHtml(html) {
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    var dangerous = doc.querySelectorAll('script, object, embed, iframe');
+    for (var i = dangerous.length - 1; i >= 0; i--) dangerous[i].remove();
+    var all = doc.querySelectorAll('*');
+    for (var i = 0; i < all.length; i++) {
+        var el = all[i];
+        for (var j = el.attributes.length - 1; j >= 0; j--) {
+            var attr = el.attributes[j];
+            if (/^on/i.test(attr.name)) { el.removeAttribute(attr.name); continue; }
+            if ((attr.name === 'href' || attr.name === 'src' || attr.name === 'action') &&
+                /^\s*javascript:/i.test(attr.value)) el.removeAttribute(attr.name);
+        }
+    }
+    return doc.body.innerHTML;
+}
+
 function renderContent(md, cursorLine) {
     _sourceLine = 0;
     var savedScrollY = window.scrollY;
-    document.getElementById('content').innerHTML = marked.parse(md);
+    document.getElementById('content').innerHTML = sanitizeHtml(marked.parse(md));
     renderMermaidBlocks();
     if (cursorLine && cursorLine > 0) {
         scrollToSourceLine(cursorLine);
@@ -265,7 +282,10 @@ async function renderMermaidBlocks() {
             const { svg } = await mermaid.render('mermaid-' + Date.now() + '-' + i, code);
             container.innerHTML = svg;
         } catch (e) {
-            container.innerHTML = '<pre style=""color:#e53e3e;font-size:0.85em;"">Mermaid error: ' + e.message + '</pre>';
+            var errEl = document.createElement('pre');
+            errEl.style.cssText = 'color:#e53e3e;font-size:0.85em';
+            errEl.textContent = 'Mermaid error: ' + e.message;
+            container.appendChild(errEl);
         }
         pre.replaceWith(container);
     }

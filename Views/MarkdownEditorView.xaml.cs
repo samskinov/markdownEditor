@@ -18,6 +18,7 @@ namespace MarkdownEditor.Views
         private FoldingManager? _foldingManager;
         private MarkdownFoldingStrategy? _foldingStrategy;
         private readonly DispatcherTimer _foldingTimer;
+        private Window? _hostWindow;
 
         public MarkdownEditorView()
         {
@@ -39,12 +40,21 @@ namespace MarkdownEditor.Views
             _foldingStrategy = new MarkdownFoldingStrategy();
             _foldingStrategy.UpdateFoldings(_foldingManager, MarkdownTextEditor.Document);
             _foldingTimer.Start();
+
+            _hostWindow = Window.GetWindow(this);
+            if (_hostWindow != null)
+                _hostWindow.Closing += OnHostWindowClosing;
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             _foldingTimer.Stop();
             StopPreviewServer();
+            if (_hostWindow != null)
+            {
+                _hostWindow.Closing -= OnHostWindowClosing;
+                _hostWindow = null;
+            }
         }
 
         private void OnFoldingTimerTick(object? sender, EventArgs e)
@@ -68,6 +78,7 @@ namespace MarkdownEditor.Views
                 _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
                 _viewModel.RequestOpenPreview -= OnRequestOpenPreview;
                 _viewModel.RequestNavigateToLine -= OnRequestNavigateToLine;
+                _viewModel.SaveFailed -= OnSaveFailed;
             }
 
             _viewModel = e.NewValue as MarkdownEditorViewModel;
@@ -83,6 +94,7 @@ namespace MarkdownEditor.Views
                 _viewModel.PropertyChanged += OnViewModelPropertyChanged;
                 _viewModel.RequestOpenPreview += OnRequestOpenPreview;
                 _viewModel.RequestNavigateToLine += OnRequestNavigateToLine;
+                _viewModel.SaveFailed += OnSaveFailed;
 
                 _isUpdatingFromViewModel = true;
                 MarkdownTextEditor.Text = _viewModel.MarkdownText;
@@ -170,7 +182,39 @@ namespace MarkdownEditor.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Cannot open browser: {ex.Message}");
+                var message = $"Unable to open the browser automatically.\n\nPreview URL:\n{url}";
+                try { Clipboard.SetText(url); message += "\n\n(URL copied to clipboard)"; }
+                catch { }
+                MessageBox.Show(message, "Preview", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+        }
+
+        private void OnHostWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (_viewModel?.IsModified != true) return;
+            var result = MessageBox.Show(
+                "You have unsaved changes. Save before closing?",
+                "Unsaved Changes",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Warning);
+            switch (result)
+            {
+                case MessageBoxResult.Yes:
+                    _viewModel.SaveCommand.Execute(null);
+                    break;
+                case MessageBoxResult.Cancel:
+                    e.Cancel = true;
+                    break;
+            }
+        }
+
+        private void OnSaveFailed(string message)
+        {
+            MessageBox.Show(
+                $"Failed to save: {message}",
+                "Save Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
 
         // ─── Editor Insert Operations ────────────────────────

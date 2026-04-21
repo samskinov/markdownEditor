@@ -14,6 +14,7 @@ namespace MarkdownEditor.Services
     {
         private readonly HttpListener _listener;
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
+        private readonly Task _listenTask;
         private volatile string _markdown = string.Empty;
         private long _version;
         private volatile int _cursorLine = 1;
@@ -27,7 +28,7 @@ namespace MarkdownEditor.Services
             _listener = new HttpListener();
             _listener.Prefixes.Add(Url);
             _listener.Start();
-            Task.Run(() => ListenLoop(_cts.Token));
+            _listenTask = Task.Run(() => ListenLoop(_cts.Token));
         }
 
         public void UpdateContent(string markdown)
@@ -142,6 +143,7 @@ namespace MarkdownEditor.Services
 
         private readonly object _sseLock = new object();
         private volatile List<HttpListenerResponse> _sseClients = new List<HttpListenerResponse>();
+        private int _disposed;
 
         private void NotifySseClients(long version, int cursorLine)
         {
@@ -152,6 +154,7 @@ namespace MarkdownEditor.Services
             }
             var data = $"event: version\ndata: {version}\n\nevent: cursor\ndata: {cursorLine}\n\n";
             var buffer = Encoding.UTF8.GetBytes(data);
+            List<HttpListenerResponse>? dead = null;
             foreach (var client in clients)
             {
                 try
@@ -159,7 +162,22 @@ namespace MarkdownEditor.Services
                     client.OutputStream.Write(buffer, 0, buffer.Length);
                     client.OutputStream.Flush();
                 }
-                catch { }
+                catch
+                {
+                    dead ??= new List<HttpListenerResponse>();
+                    dead.Add(client);
+                }
+            }
+            if (dead != null)
+            {
+                lock (_sseLock)
+                {
+                    var updated = new List<HttpListenerResponse>(_sseClients);
+                    foreach (var d in dead) updated.Remove(d);
+                    _sseClients = updated;
+                }
+                foreach (var d in dead)
+                    try { d.Close(); } catch { }
             }
         }
 
@@ -230,9 +248,18 @@ namespace MarkdownEditor.Services
 
         public void Dispose()
         {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
             _cts.Cancel();
             try { _listener.Stop(); } catch { }
             try { _listener.Close(); } catch { }
+            List<HttpListenerResponse> clients;
+            lock (_sseLock)
+            {
+                clients = _sseClients;
+                _sseClients = new List<HttpListenerResponse>();
+            }
+            foreach (var c in clients)
+                try { c.Close(); } catch { }
             _cts.Dispose();
         }
     }

@@ -12,6 +12,7 @@ namespace MarkdownEditor.ViewModels
         private readonly DispatcherTimer _debounceTimer;
         private string _markdownText = string.Empty;
         private bool _isModified;
+        private bool _isLoading;
         private int _lineCount;
         private int _charCount;
         private int _cursorLine = 1;
@@ -63,6 +64,7 @@ namespace MarkdownEditor.ViewModels
 
         // Events for the host application
         public event Action? SaveRequested;
+        public event Action<string>? SaveFailed;
 
         // Event raised when user clicks "Preview" to open browser preview
         public event Action? RequestOpenPreview;
@@ -85,9 +87,12 @@ namespace MarkdownEditor.ViewModels
             {
                 if (SetProperty(ref _markdownText, value))
                 {
-                    IsModified = true;
+                    if (!_isLoading)
+                    {
+                        IsModified = true;
+                        RestartDebounce();
+                    }
                     UpdateStats();
-                    RestartDebounce();
                 }
             }
         }
@@ -201,11 +206,20 @@ namespace MarkdownEditor.ViewModels
         /// </summary>
         public void LoadContent(string markdown)
         {
-            _markdownText = markdown ?? string.Empty;
-            OnPropertyChanged(nameof(MarkdownText));
-            IsModified = false;
-            UpdateStats();
-            NotifyContentChanged();
+            _isLoading = true;
+            try
+            {
+                _markdownText = markdown ?? string.Empty;
+                OnPropertyChanged(nameof(MarkdownText));
+                IsModified = false;
+                UpdateStats();
+                TocEntries = TocExtractor.Extract(_markdownText);
+                NotifyContentChanged();
+            }
+            finally
+            {
+                _isLoading = false;
+            }
         }
 
         /// <summary>
@@ -224,7 +238,14 @@ namespace MarkdownEditor.ViewModels
 
         private void OnSave()
         {
-            SaveRequested?.Invoke();
+            try
+            {
+                SaveRequested?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                SaveFailed?.Invoke(ex.Message);
+            }
         }
 
         private void OnOpenPreview()
@@ -250,6 +271,7 @@ namespace MarkdownEditor.ViewModels
         private void OnDebounceTimerTick(object? sender, EventArgs e)
         {
             _debounceTimer.Stop();
+            TocEntries = TocExtractor.Extract(_markdownText);
             NotifyContentChanged();
         }
 
@@ -260,10 +282,9 @@ namespace MarkdownEditor.ViewModels
 
         private void UpdateStats()
         {
-            var text = MarkdownText ?? string.Empty;
+            var text = _markdownText;
             CharCount = text.Length;
             LineCount = text.Length == 0 ? 1 : CountLines(text);
-            TocEntries = TocExtractor.Extract(text);
             OnPropertyChanged(nameof(StatusLabel));
         }
 
