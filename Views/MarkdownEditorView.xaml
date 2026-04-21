@@ -104,7 +104,7 @@
                         <Separator Style="{StaticResource ToolbarDropdownSeparatorStyle}" />
                         <MenuItem Header="❝  Quote"           Style="{StaticResource ToolbarDropdownItemStyle}" Command="{Binding InsertQuoteCommand}" />
                         <MenuItem Header="&lt;/&gt; Inline code" Style="{StaticResource ToolbarDropdownItemStyle}" Command="{Binding InsertInlineCodeCommand}" />
-                        <MenuItem Header="{ } Code block"     Style="{StaticResource ToolbarDropdownItemStyle}" Command="{Binding InsertCodeBlockCommand}" />
+                        <MenuItem Header="{}{ } Code block"     Style="{StaticResource ToolbarDropdownItemStyle}" Command="{Binding InsertCodeBlockCommand}" />
                         <Separator Style="{StaticResource ToolbarDropdownSeparatorStyle}" />
                         <MenuItem Header="🔗  Link (Ctrl+K)"  Style="{StaticResource ToolbarDropdownItemStyle}" Command="{Binding InsertLinkCommand}" />
                         <MenuItem Header="🖼  Image"          Style="{StaticResource ToolbarDropdownItemStyle}" Command="{Binding InsertImageCommand}" />
@@ -326,25 +326,21 @@
                         </ToggleButton>
                     </DockPanel>
 
-                    <!-- Search box -->
+                    <!-- Search box (Markdown) -->
                     <TextBox Grid.Row="1"
                              Margin="10,4,10,4"
-                             Tag="🔍 Filter…"
-                             Style="{StaticResource HelpSearchBoxStyle}">
-                        <TextBox.Style>
-                            <Style TargetType="TextBox" BasedOn="{StaticResource HelpSearchBoxStyle}">
-                                <Style.Triggers>
-                                    <!-- Route Text to the active VM -->
-                                    <DataTrigger Binding="{Binding IsMarkdownHelpOpen}" Value="True">
-                                        <Setter Property="Text" Value="{Binding MarkdownHelpVM.FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsMermaidHelpOpen}" Value="True">
-                                        <Setter Property="Text" Value="{Binding MermaidHelpVM.FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Style>
-                    </TextBox>
+                             Tag="🔍 Filter snippets…"
+                             Style="{StaticResource HelpSearchBoxStyle}"
+                             Text="{Binding MarkdownHelpVM.FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Visibility="{Binding IsMarkdownHelpOpen, Converter={StaticResource BoolToVis}}" />
+
+                    <!-- Search box (Mermaid) -->
+                    <TextBox Grid.Row="1"
+                             Margin="10,4,10,4"
+                             Tag="🔍 Filter examples…"
+                             Style="{StaticResource HelpSearchBoxStyle}"
+                             Text="{Binding MermaidHelpVM.FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Visibility="{Binding IsMermaidHelpOpen, Converter={StaticResource BoolToVis}}" />
 
                     <!-- Markdown snippets list -->
                     <ScrollViewer Grid.Row="2"
