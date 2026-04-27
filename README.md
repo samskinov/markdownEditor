@@ -1,3 +1,30 @@
+---
+
+## Nouveautés (avril 2026)
+
+- **Bouton "AI Prompt"** : Un bouton "🤖 AI Prompt" est disponible dans la barre d'outils de l'éditeur. Il déclenche la commande `GenerateAiPromptCommand` du ViewModel.
+- **Intégration BusyWindow** : Pour les traitements longs (génération de prompt IA, etc.), utilisez la fenêtre `BusyWindow` (MVVM-friendly, thread-safe, thème moderne). Instanciez un `BusyWindowViewModel`, affichez la fenêtre, puis ajoutez les étapes de progression depuis n'importe quel thread.
+- **API d'intégration IA** : Abonnez-vous à l'événement `RequestGenerateAiPrompt` du `MarkdownEditorViewModel` pour lancer votre logique IA et afficher la progression à l'utilisateur via le BusyWindow.
+- **Word-wrap Mermaid** : Les graphes Mermaid dans le preview HTML supportent le retour à la ligne automatique dans les nœuds/objets (option `wrap: true`). Le rendu à l'écran et à l'impression est fidèle, sans page blanche parasite.
+
+### Exemple d'intégration IA avec BusyWindow
+
+```csharp
+// Dans votre code d'intégration :
+_editorVm.RequestGenerateAiPrompt += () => {
+    var busyVm = new BusyWindowViewModel("Génération du prompt IA…", "Analyse du document en cours");
+    var win = new BusyWindow(busyVm, ownerWindow);
+    win.Show();
+    _ = Task.Run(async () => {
+        busyVm.AddStep("Extraction des sections…");
+        // ... traitement IA ...
+        busyVm.Complete("Prompt généré avec succès !");
+    });
+};
+```
+
+---
+
 # MarkdownEditor — Markdown + Mermaid WPF
 
 Lightweight WPF component for editing Markdown with live preview and Mermaid diagrams. Targets **.NET Framework 4.8**.

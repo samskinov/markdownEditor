@@ -165,13 +165,15 @@ img {
     background: var(--code-bg);
     border: 1px solid var(--border);
     border-radius: 8px;
+    overflow-x: auto;
     page-break-inside: avoid;
     break-inside: avoid;
 }
 
 .mermaid svg {
     max-width: 100%;
-    height: auto;
+    width: auto !important;
+    height: auto !important;
     page-break-inside: avoid;
     break-inside: avoid;
 }
@@ -204,7 +206,7 @@ img {
         widows: 3;
     }
 
-    pre, blockquote, table, .mermaid, img, figure {
+    pre, blockquote, table, img, figure {
         page-break-inside: avoid;
         break-inside: avoid;
     }
@@ -212,6 +214,19 @@ img {
     .mermaid {
         display: block;
         text-align: center;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        overflow: visible;
+        max-width: 100%;
+    }
+
+    .mermaid svg {
+        display: block;
+        margin: 0 auto;
+        max-width: 100% !important;
+        width: auto !important;
+        height: auto !important;
+        max-height: 85vh;
     }
 
     h1, h2, h3, h4, h5, h6 {
@@ -236,8 +251,11 @@ mermaid.initialize({
     startOnLoad: false,
     theme: 'default',
     securityLevel: 'strict',
-    flowchart: { useMaxWidth: true, htmlLabels: true },
-    sequence: { useMaxWidth: true }
+    wrap: true,
+    flowchart: { useMaxWidth: true, htmlLabels: true, wrap: true },
+    sequence:  { useMaxWidth: true, wrap: true },
+    gantt:     { useMaxWidth: true },
+    er:        { useMaxWidth: true, layoutDirection: 'TB', diagramPadding: 20, entityPadding: 15 }
 });
 
 marked.setOptions({ gfm: true, breaks: false });
@@ -329,6 +347,15 @@ async function renderMermaidBlocks() {
         try {
             const { svg } = await mermaid.render('mermaid-' + Date.now() + '-' + i, code);
             container.innerHTML = svg;
+            // Strip fixed pixel dimensions injected by Mermaid so CSS controls sizing
+            const svgEl = container.querySelector('svg');
+            if (svgEl) {
+                svgEl.removeAttribute('width');
+                svgEl.removeAttribute('height');
+                svgEl.style.maxWidth = '100%';
+                svgEl.style.width = 'auto';
+                svgEl.style.height = 'auto';
+            }
         } catch (e) {
             var errEl = document.createElement('pre');
             errEl.style.cssText = 'color:#e53e3e;font-size:0.85em';
@@ -363,6 +390,16 @@ function startSSE() {
 
 document.addEventListener('DOMContentLoaded', function() {
     startSSE();
+});
+
+window.addEventListener('beforeprint', function() {
+    document.querySelectorAll('.mermaid svg').forEach(function(svg) {
+        svg.removeAttribute('width');
+        svg.removeAttribute('height');
+        svg.style.maxWidth = '100%';
+        svg.style.width = 'auto';
+        svg.style.height = 'auto';
+    });
 });
 </script>
 </head>

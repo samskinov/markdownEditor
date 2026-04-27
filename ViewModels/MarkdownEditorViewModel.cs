@@ -57,6 +57,7 @@ namespace MarkdownEditor.ViewModels
             ToggleTocCommand = new RelayCommand(() => IsTocOpen = !IsTocOpen);
             NavigateToLineCommand = new RelayCommand(OnNavigateToLine);
             OpenPreviewCommand = new RelayCommand(OnOpenPreview);
+            GenerateAiPromptCommand = new RelayCommand(OnGenerateAiPrompt);
 
             MarkdownText = GetDefaultDocument();
             IsModified = false;
@@ -68,6 +69,13 @@ namespace MarkdownEditor.ViewModels
 
         // Event raised when user clicks "Preview" to open browser preview
         public event Action? RequestOpenPreview;
+
+        /// <summary>
+        /// Raised when the user clicks "Generate AI documentation prompt".
+        /// The handler is responsible for showing a <see cref="BusyWindowViewModel"/>-backed
+        /// progress window and running its async generation process.
+        /// </summary>
+        public event Action? RequestGenerateAiPrompt;
 
         // Events for the View (editor integration)
         public event Action? RequestUndo;
@@ -200,6 +208,7 @@ namespace MarkdownEditor.ViewModels
         public ICommand ToggleTocCommand { get; }
         public ICommand NavigateToLineCommand { get; }
         public ICommand OpenPreviewCommand { get; }
+        public ICommand GenerateAiPromptCommand { get; }
 
         /// <summary>
         /// Load markdown content from an external source (e.g. database).
@@ -251,6 +260,11 @@ namespace MarkdownEditor.ViewModels
         private void OnOpenPreview()
         {
             RequestOpenPreview?.Invoke();
+        }
+
+        private void OnGenerateAiPrompt()
+        {
+            RequestGenerateAiPrompt?.Invoke();
         }
 
         private void OnNavigateToLine()
