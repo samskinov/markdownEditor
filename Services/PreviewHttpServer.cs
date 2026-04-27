@@ -93,14 +93,6 @@ namespace MarkdownEditor.Services
                         await HandleSseAsync(ctx, ct);
                         break;
 
-                    case "/scripts/marked.min.js":
-                        await ServeEmbeddedScriptAsync(ctx, "marked.min.js");
-                        break;
-
-                    case "/scripts/mermaid.min.js":
-                        await ServeEmbeddedScriptAsync(ctx, "mermaid.min.js");
-                        break;
-
                     default:
                         ctx.Response.StatusCode = 404;
                         ctx.Response.Close();
@@ -120,24 +112,6 @@ namespace MarkdownEditor.Services
             ctx.Response.ContentLength64 = buffer.Length;
             ctx.Response.Headers["Cache-Control"] = "no-store";
             await ctx.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-            ctx.Response.Close();
-        }
-
-        private static async Task ServeEmbeddedScriptAsync(HttpListenerContext ctx, string fileName)
-        {
-            var content = EmbeddedScriptProvider.GetScript(fileName);
-            if (content != null)
-            {
-                var buffer = Encoding.UTF8.GetBytes(content);
-                ctx.Response.ContentType = "application/javascript; charset=utf-8";
-                ctx.Response.ContentLength64 = buffer.Length;
-                ctx.Response.Headers["Cache-Control"] = "max-age=86400";
-                await ctx.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-            }
-            else
-            {
-                ctx.Response.StatusCode = 404;
-            }
             ctx.Response.Close();
         }
 

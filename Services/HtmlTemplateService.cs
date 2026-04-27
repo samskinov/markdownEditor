@@ -165,11 +165,15 @@ img {
     background: var(--code-bg);
     border: 1px solid var(--border);
     border-radius: 8px;
+    page-break-inside: avoid;
+    break-inside: avoid;
 }
 
 .mermaid svg {
     max-width: 100%;
     height: auto;
+    page-break-inside: avoid;
+    break-inside: avoid;
 }
 
 #live-indicator {
@@ -180,9 +184,53 @@ img {
     color: #9496a1;
     opacity: 0.6;
 }
+
+@media print {
+    html, body {
+        height: auto;
+    }
+
+    body {
+        max-width: 100%;
+        padding: 20px 24px;
+        background: #fff;
+        color: #000;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    p, li {
+        orphans: 3;
+        widows: 3;
+    }
+
+    pre, blockquote, table, .mermaid, img, figure {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    .mermaid {
+        display: block;
+        text-align: center;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        page-break-after: avoid;
+        break-after: avoid;
+    }
+
+    a {
+        color: #000;
+        text-decoration: underline;
+    }
+
+    #live-indicator {
+        display: none;
+    }
+}
 </style>
-<script src=""/scripts/marked.min.js""></script>
-<script src=""/scripts/mermaid.min.js""></script>
+<script src=""https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js""></script>
+<script src=""https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js""></script>
 <script>
 mermaid.initialize({
     startOnLoad: false,
@@ -348,11 +396,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 .Replace(placeholder, $"<script type=\"text/plain\" id=\"__md_data\">{safeMd}</script>")
                 .Replace(liveIndicator, "")
                 .Replace(sseScript, initScript);
-
-            html = html.Replace("<script src=\"/scripts/marked.min.js\"></script>",
-                "<script src=\"https://cdn.jsdelivr.net/npm/marked@9/marked.min.js\"></script>");
-            html = html.Replace("<script src=\"/scripts/mermaid.min.js\"></script>",
-                "<script src=\"https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js\"></script>");
 
             return html;
         }
