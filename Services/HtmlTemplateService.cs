@@ -13,47 +13,52 @@ namespace MarkdownEditor.Services
 <meta charset=""UTF-8"">
 <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
 <title>Markdown Preview</title>
+<link rel=""preconnect"" href=""https://fonts.googleapis.com"">
+<link rel=""preconnect"" href=""https://fonts.gstatic.com"" crossorigin>
+<link href=""https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap"" rel=""stylesheet"">
 <style>
 :root {
-    --bg: #ffffff;
-    --text: #1a1a2e;
-    --text-secondary: #555770;
-    --border: #e2e4e9;
-    --code-bg: #f6f8fa;
-    --blockquote-border: #6366f1;
-    --blockquote-bg: #f0f0ff;
-    --link: #6366f1;
-    --table-header-bg: #f8f9fb;
-    --table-border: #e2e4e9;
-    --hr: #e2e4e9;
-    --inline-code-bg: #eff1f5;
-    --inline-code-text: #d63384;
-    --checkbox-accent: #6366f1;
-    --heading-color: #16163a;
-    --shadow: rgba(0,0,0,0.04);
+    /* GitHub Primer Light — https://primer.style/primitives/colors */
+    --bg: #ffffff;                     /* canvas.default */
+    --text: #24292f;                   /* fg.default */
+    --text-secondary: #57606a;         /* fg.muted */
+    --border: #d0d7de;                 /* border.default */
+    --code-bg: #f6f8fa;                /* canvas.subtle */
+    --blockquote-border: #0969da;      /* accent.fg */
+    --blockquote-bg: #ddf4ff;          /* accent.subtle */
+    --link: #0969da;                   /* accent.fg */
+    --table-header-bg: #f6f8fa;        /* canvas.subtle */
+    --table-border: #d0d7de;           /* border.default */
+    --hr: #d0d7de;                     /* border.default */
+    --inline-code-bg: #f6f8fa;         /* canvas.subtle */
+    --inline-code-text: #cf222e;       /* danger.fg */
+    --checkbox-accent: #0969da;        /* accent.fg */
+    --heading-color: #1f2328;          /* fg.default (strong) */
+    --shadow: rgba(31,35,40,0.06);     /* GitHub-style shadow */
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    font-size: 15px;
-    line-height: 1.7;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
     color: var(--text);
     background: var(--bg);
     padding: 28px 36px;
     max-width: 900px;
     margin: 0 auto;
     -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'calt' 1, 'kern' 1;
 }
 
 h1, h2, h3, h4, h5, h6 {
     color: var(--heading-color);
-    margin-top: 1.6em;
-    margin-bottom: 0.6em;
-    font-weight: 700;
-    line-height: 1.3;
-    letter-spacing: -0.01em;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
 }
 
 h1 { font-size: 2em; border-bottom: 2px solid var(--border); padding-bottom: 0.3em; }
@@ -139,7 +144,7 @@ th {
     color: var(--heading-color);
 }
 
-tr:nth-child(even) td { background: #fafbfc; }
+tr:nth-child(even) td { background: var(--code-bg); }
 
 hr {
     border: none;
@@ -249,7 +254,124 @@ img {
 <script>
 mermaid.initialize({
     startOnLoad: false,
-    theme: 'default',
+    theme: 'base',
+    themeVariables: {
+        /* ── Core ─────────────────────────────────────────────────── */
+        background: '#ffffff',
+        primaryColor: '#ddf4ff',
+        primaryTextColor: '#24292f',
+        primaryBorderColor: '#0969da',
+        secondaryColor: '#dafbe1',
+        secondaryBorderColor: '#1a7f37',
+        secondaryTextColor: '#57606a',
+        tertiaryColor: '#fff8c5',
+        tertiaryBorderColor: '#9a6700',
+        tertiaryTextColor: '#57606a',
+        noteBkgColor: '#fff8c5',
+        noteBorderColor: '#9a6700',
+        noteTextColor: '#24292f',
+        lineColor: '#57606a',
+        arrowheadColor: '#57606a',
+        textColor: '#24292f',
+        border2: '#d0d7de',
+        mainBkg: '#ddf4ff',
+        nodeBkg: '#ddf4ff',
+        nodeBorder: '#0969da',
+        nodeTextColor: '#24292f',
+        clusterBkg: '#f6f8fa',
+        clusterBorder: '#d0d7de',
+        defaultLinkColor: '#57606a',
+        titleColor: '#24292f',
+        edgeLabelBackground: '#f6f8fa',
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif',
+        fontSize: '14px',
+        useGradient: false,
+        dropShadow: 'drop-shadow(0px 1px 2px rgba(31,35,40,0.12))',
+        /* ── Sequence ─────────────────────────────────────────────── */
+        actorBorder: '#0969da', actorBkg: '#ddf4ff', actorTextColor: '#24292f',
+        actorLineColor: '#d0d7de', signalColor: '#57606a', signalTextColor: '#24292f',
+        labelBoxBkgColor: '#ddf4ff', labelBoxBorderColor: '#0969da',
+        labelTextColor: '#24292f', loopTextColor: '#24292f',
+        activationBorderColor: '#0969da', activationBkgColor: '#b6e3ff',
+        sequenceNumberColor: '#ffffff',
+        /* ── Gantt ────────────────────────────────────────────────── */
+        sectionBkgColor: '#ddf4ff', altSectionBkgColor: '#f6f8fa',
+        sectionBkgColor2: '#dafbe1', excludeBkgColor: '#f6f8fa',
+        taskBorderColor: '#0969da', taskBkgColor: '#54aeff',
+        activeTaskBorderColor: '#0550ae', activeTaskBkgColor: '#b6e3ff',
+        gridColor: '#d0d7de', doneTaskBkgColor: '#d8dee4', doneTaskBorderColor: '#8c959f',
+        critBorderColor: '#cf222e', critBkgColor: '#ffebe9', todayLineColor: '#cf222e',
+        taskTextColor: '#24292f', taskTextLightColor: '#ffffff', taskTextDarkColor: '#24292f',
+        taskTextClickableColor: '#0969da',
+        /* ── State ────────────────────────────────────────────────── */
+        stateBkg: '#ddf4ff', stateLabelColor: '#24292f',
+        transitionColor: '#57606a', transitionLabelColor: '#24292f',
+        compositeBackground: '#ffffff', altBackground: '#f6f8fa',
+        compositeTitleBackground: '#f6f8fa', compositeBorder: '#d0d7de',
+        innerEndBackground: '#0969da',
+        errorBkgColor: '#ffebe9', errorTextColor: '#cf222e',
+        labelBackgroundColor: '#ddf4ff', specialStateColor: '#57606a',
+        /* ── GitGraph ─────────────────────────────────────────────── */
+        git0: '#0969da', git1: '#1a7f37', git2: '#8250df', git3: '#cf222e',
+        git4: '#bf3989', git5: '#9a6700', git6: '#bc4c00', git7: '#57606a',
+        gitInv0: '#ffffff', gitInv1: '#ffffff', gitInv2: '#ffffff', gitInv3: '#ffffff',
+        gitInv4: '#ffffff', gitInv5: '#ffffff', gitInv6: '#ffffff', gitInv7: '#ffffff',
+        gitBranchLabel0: '#ffffff', gitBranchLabel1: '#ffffff', gitBranchLabel2: '#ffffff',
+        gitBranchLabel3: '#ffffff', gitBranchLabel4: '#ffffff', gitBranchLabel5: '#ffffff',
+        gitBranchLabel6: '#ffffff', gitBranchLabel7: '#ffffff',
+        branchLabelColor: '#24292f',
+        tagLabelColor: '#24292f', tagLabelBackground: '#fff8c5', tagLabelBorder: '#9a6700',
+        commitLabelColor: '#24292f', commitLabelBackground: '#f6f8fa',
+        /* ── Pie / Donut ──────────────────────────────────────────── */
+        pie1: '#218bff', pie2: '#2da44e', pie3: '#d4a72c', pie4: '#fa4549',
+        pie5: '#a475f9', pie6: '#e85aad', pie7: '#ec6547', pie8: '#fb8f44',
+        pie9: '#4ac26b', pie10: '#54aeff', pie11: '#c297ff', pie12: '#eac54f',
+        pieTitleTextColor: '#24292f', pieSectionTextColor: '#ffffff',
+        pieLegendTextColor: '#24292f', pieStrokeColor: '#ffffff',
+        pieOuterStrokeColor: '#d0d7de', pieOpacity: '0.9',
+        /* ── Treemap / cScale ─────────────────────────────────────── */
+        cScale0: '#ddf4ff',  cScale1: '#dafbe1',  cScale2: '#fff8c5',
+        cScale3: '#ffebe9',  cScale4: '#fbefff',  cScale5: '#ffeff7',
+        cScale6: '#fff0eb',  cScale7: '#fff1e5',  cScale8: '#b6e3ff',
+        cScale9: '#aceebb',  cScale10: '#fae17d', cScale11: '#ecd8ff',
+        cScaleInv0: '#0550ae',  cScaleInv1: '#116329',  cScaleInv2: '#7d4e00',
+        cScaleInv3: '#a40e26',  cScaleInv4: '#6639ba',  cScaleInv5: '#99286e',
+        cScaleInv6: '#9e2f1c',  cScaleInv7: '#953800',  cScaleInv8: '#033d8b',
+        cScaleInv9: '#044f1e',  cScaleInv10: '#633c01', cScaleInv11: '#512a97',
+        cScalePeer0: '#b6e3ff', cScalePeer1: '#aceebb', cScalePeer2: '#fae17d',
+        cScalePeer3: '#ffcecb', cScalePeer4: '#ecd8ff', cScalePeer5: '#ffd3eb',
+        cScalePeer6: '#ffd6cc', cScalePeer7: '#ffd8b5', cScalePeer8: '#80ccff',
+        cScalePeer9: '#6fdd8b', cScalePeer10: '#eac54f', cScalePeer11: '#d8b9ff',
+        scaleLabelColor: '#24292f',
+        /* ── Class ────────────────────────────────────────────────── */
+        classText: '#24292f',
+        fillType0: '#ddf4ff', fillType1: '#dafbe1', fillType2: '#fff8c5',
+        fillType3: '#ffebe9', fillType4: '#fbefff', fillType5: '#ffeff7',
+        fillType6: '#fff0eb', fillType7: '#fff1e5',
+        /* ── Quadrant ─────────────────────────────────────────────── */
+        quadrant1Fill: '#ddf4ff',    quadrant2Fill: '#dafbe1',
+        quadrant3Fill: '#fff8c5',    quadrant4Fill: '#f6f8fa',
+        quadrantPointFill: '#0969da', quadrantPointTextFill: '#24292f',
+        quadrantXAxisTextFill: '#57606a', quadrantYAxisTextFill: '#57606a',
+        quadrantInternalBorderStrokeFill: '#d0d7de',
+        quadrantExternalBorderStrokeFill: '#d0d7de',
+        quadrantTitleFill: '#24292f',
+        /* ── C4 ───────────────────────────────────────────────────── */
+        personBorder: '#0969da', personBkg: '#ddf4ff',
+        /* ── ER ───────────────────────────────────────────────────── */
+        rowOdd: '#ffffff', rowEven: '#f6f8fa',
+        attributeBackgroundColorOdd: '#ffffff', attributeBackgroundColorEven: '#f6f8fa',
+        /* ── Architecture ─────────────────────────────────────────── */
+        archEdgeColor: '#57606a', archEdgeArrowColor: '#57606a',
+        archGroupBorderColor: '#d0d7de', archGroupBorderWidth: '2px',
+        /* ── Requirement ──────────────────────────────────────────── */
+        requirementBackground: '#ddf4ff',
+        requirementBorderColor: '#0969da',
+        requirementTextColor: '#24292f',
+        /* ── Gradient (Mindmap, Timeline, GitGraph) ───────────────── */
+        gradientStart: '#0969da',
+        gradientStop: '#8250df',
+    },
     securityLevel: 'strict',
     wrap: true,
     flowchart: { useMaxWidth: true, htmlLabels: true, wrap: true },
