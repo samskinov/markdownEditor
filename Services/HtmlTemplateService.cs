@@ -380,35 +380,40 @@ mermaid.initialize({
     er:        { useMaxWidth: true, layoutDirection: 'TB', diagramPadding: 20, entityPadding: 15 }
 });
 
-marked.setOptions({ gfm: true, breaks: false });
+// marked v5+ uses marked.use() — renderer functions receive a token object,
+// not separate string arguments like in v4.
+marked.use({ gfm: true, breaks: false });
 
 var _sourceLine = 0;
-var _renderer = new marked.Renderer();
-var _origHeading = _renderer.heading.bind(_renderer);
-_renderer.heading = function(text, depth, raw) {
-    _sourceLine++;
-    return '<h' + depth + ' data-source-line=""' + _sourceLine + '"">' + text + '</h' + depth + '>';
-};
-
-var _origParagraph = _renderer.paragraph.bind(_renderer);
-_renderer.paragraph = function(text) {
-    _sourceLine++;
-    return '<p data-source-line=""' + _sourceLine + '"">' + text + '</p>';
-};
-
-var _origCode = _renderer.code.bind(_renderer);
-_renderer.code = function(code, lang, escaped) {
-    _sourceLine++;
-    return '<pre data-source-line=""' + _sourceLine + '""><code class=""language-' + (lang || '') + '"">' + (escaped ? code : (code || '')) + '</code></pre>';
-};
-
-var _origListitem = _renderer.listitem.bind(_renderer);
-_renderer.listitem = function(text, task, checked) {
-    _sourceLine++;
-    return '<li data-source-line=""' + _sourceLine + '"">' + text + '</li>';
-};
-
-marked.setOptions({ renderer: _renderer });
+marked.use({
+    renderer: {
+        heading(token) {
+            _sourceLine++;
+            var text = this.parser.parseInline(token.tokens);
+            return '<h' + token.depth + ' data-source-line=""' + _sourceLine + '"">' + text + '</h' + token.depth + '>';
+        },
+        paragraph(token) {
+            _sourceLine++;
+            var text = this.parser.parseInline(token.tokens);
+            return '<p data-source-line=""' + _sourceLine + '"">' + text + '</p>';
+        },
+        code(token) {
+            _sourceLine++;
+            // Escape HTML entities so the DOM parses correctly and
+            // .textContent returns the original source (used by renderMermaidBlocks).
+            var escaped = token.text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            return '<pre data-source-line=""' + _sourceLine + '""><code class=""language-' + (token.lang || '') + '"">' + escaped + '</code></pre>';
+        },
+        listitem(token) {
+            _sourceLine++;
+            var body = token.tokens ? this.parser.parse(token.tokens, !!token.loose) : token.text;
+            return '<li data-source-line=""' + _sourceLine + '"">' + body + '</li>';
+        }
+    }
+});
 
 function sanitizeHtml(html) {
     var doc = new DOMParser().parseFromString(html, 'text/html');
