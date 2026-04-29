@@ -296,31 +296,35 @@ kanban
                 new MermaidExample("Treemap", "Treemap — hierarchical data (beta)",
 @"```mermaid
 treemap-beta
-    title Codebase Size
-    Frontend
-        Components 420
-        Pages 180
-        Hooks 95
-    Backend
-        Controllers 310
-        Services 270
-        Repositories 140
-    Shared
-        Utils 85
-        Types 60
+""Codebase""
+    ""Frontend""
+        ""Components"": 420
+        ""Pages"": 180
+        ""Hooks"": 95
+    ""Backend""
+        ""Controllers"": 310
+        ""Services"": 270
+        ""Repositories"": 140
+    ""Shared""
+        ""Utils"": 85
+        ""Types"": 60
 ```"),
 
-                new MermaidExample("ZenUML Sequence", "ZenUML — alternative sequence diagram",
+                new MermaidExample("Venn Diagram", "Venn — set intersections (beta)",
 @"```mermaid
-zenuml
-    title API Call Flow
-    @Actor Client
-    @Boundary API
-    @Database DB
-    Client -> API: GET /users
-    API -> DB: SELECT users
-    DB --> API: rows
-    API --> Client: 200 OK
+venn-beta
+  set A[""Frontend""]
+    text A1[""React / Vue""]
+    text A2[""Design Systems""]
+  set B[""Backend""]
+    text B1[""Node.js""]
+    text B2[""Databases""]
+  set C[""DevOps""]
+    text C1[""Docker""]
+    text C2[""Kubernetes""]
+  union A,B[""APIs""]
+  union B,C[""Linux""]
+  union A,B,C[""Git""]
 ```"),
             };
         }
