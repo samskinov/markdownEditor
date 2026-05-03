@@ -79,6 +79,7 @@ namespace MarkdownEditor.Views
                 _viewModel.RequestOpenPreview -= OnRequestOpenPreview;
                 _viewModel.RequestNavigateToLine -= OnRequestNavigateToLine;
                 _viewModel.SaveFailed -= OnSaveFailed;
+                _viewModel.RequestGenerateMermaidFixPrompt -= OnRequestGenerateMermaidFixPrompt;
             }
 
             _viewModel = e.NewValue as MarkdownEditorViewModel;
@@ -95,6 +96,7 @@ namespace MarkdownEditor.Views
                 _viewModel.RequestOpenPreview += OnRequestOpenPreview;
                 _viewModel.RequestNavigateToLine += OnRequestNavigateToLine;
                 _viewModel.SaveFailed += OnSaveFailed;
+                _viewModel.RequestGenerateMermaidFixPrompt += OnRequestGenerateMermaidFixPrompt;
 
                 _isUpdatingFromViewModel = true;
                 MarkdownTextEditor.Text = _viewModel.MarkdownText;
@@ -301,6 +303,38 @@ namespace MarkdownEditor.Views
                     MarkdownTextEditor.Text = vmText;
                     _isUpdatingFromViewModel = false;
                 }
+            }
+        }
+
+        // ─── Mermaid Fix Prompt ───────────────────────────────
+
+        private void OnRequestGenerateMermaidFixPrompt()
+        {
+            var markdown    = MarkdownTextEditor.Text;
+            var caretOffset = MarkdownTextEditor.CaretOffset;
+
+            var block = MermaidBlockExtractor.TryExtract(markdown, caretOffset);
+
+            if (block == null || string.IsNullOrWhiteSpace(block.Content))
+            {
+                MessageBox.Show(
+                    "No Mermaid block found at the current cursor position.\n\n" +
+                    "Place the cursor inside a ```mermaid … ``` block and try again.",
+                    "Fix Mermaid — No Block Detected",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            var prompt = MermaidPromptService.BuildFixPrompt(block.Content, block.DiagramType);
+            var vm     = new MermaidFixPromptViewModel(block.Content, prompt, block.DiagramType);
+            var window = new MermaidFixPromptWindow(vm, Window.GetWindow(this));
+            window.ShowDialog();
+
+            if (window.ExtractedCode is { } fixedCode)
+            {
+                var updatedMarkdown = MermaidBlockExtractor.ReplaceBlockContent(markdown, block, fixedCode);
+                MarkdownTextEditor.Text = updatedMarkdown;
             }
         }
 

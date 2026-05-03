@@ -1,0 +1,243 @@
+<Window x:Class="MarkdownEditor.Views.MermaidFixPromptWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:MarkdownEditor.ViewModels"
+        Title="🔧 Mermaid Fix — AI Prompt Generator"
+        Width="820" Height="800"
+        MinWidth="580" MinHeight="500"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/MarkdownEditor;component/Themes/ModernTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Window.Background>
+        <SolidColorBrush Color="{StaticResource BackgroundColor}" />
+    </Window.Background>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- Header -->
+            <RowDefinition Height="Auto" />
+            <!-- Mermaid source panel -->
+            <RowDefinition Height="Auto" />
+            <!-- Prompt area -->
+            <RowDefinition Height="2*" />
+            <!-- Response area -->
+            <RowDefinition Height="*" MinHeight="120" />
+            <!-- Footer / actions -->
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ══ HEADER ══════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                Background="{StaticResource PrimaryBrush}"
+                Padding="20,14">
+            <StackPanel>
+                <TextBlock Text="🔧  Mermaid Syntax Fix — AI Prompt"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           Foreground="White" />
+                <TextBlock Text="Copy this prompt into your on-premise AI assistant to repair the Mermaid diagram."
+                           FontSize="11.5"
+                           Foreground="#CCE0FF"
+                           Margin="0,3,0,0"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <!-- ══ DETECTED MERMAID BLOCK ═══════════════════════════════════════════ -->
+        <Border Grid.Row="1"
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="0,0,14,0">
+                    <TextBlock Text="DETECTED BLOCK"
+                               FontSize="10"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource TextMutedBrush}" />
+                    <TextBlock Text="{Binding DetectedTypeDisplay}"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource PrimaryBrush}"
+                               Margin="0,4,0,0" />
+                    <TextBlock FontSize="10"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               Margin="0,2,0,0">
+                        <Run Text="~" /><Run Text="{Binding PromptTokenEstimate, Mode=OneWay}" /><Run Text=" tokens" />
+                    </TextBlock>
+                </StackPanel>
+
+                <Border Grid.Column="1"
+                        Background="{StaticResource BackgroundBrush}"
+                        CornerRadius="6"
+                        BorderBrush="{StaticResource BorderLightBrush}"
+                        BorderThickness="1"
+                        Padding="10,6"
+                        MaxHeight="130">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Auto">
+                        <TextBlock Text="{Binding MermaidCode}"
+                                   FontFamily="Cascadia Code, Fira Code, Consolas, Courier New"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextWrapping="NoWrap" />
+                    </ScrollViewer>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ══ PROMPT AREA ═══════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="2" Margin="16,12,16,6">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" Margin="0,0,0,6">
+                <TextBlock DockPanel.Dock="Left"
+                           Text="GENERATED PROMPT"
+                           FontSize="10"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           VerticalAlignment="Center" />
+                <TextBlock DockPanel.Dock="Right"
+                           Text="Select all  →  Ctrl+A"
+                           FontSize="10"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center" />
+            </DockPanel>
+
+            <Border Grid.Row="1"
+                    Background="{StaticResource SurfaceBrush}"
+                    CornerRadius="8"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1">
+                <TextBox Text="{Binding Prompt, Mode=OneWay}"
+                         IsReadOnly="True"
+                         AcceptsReturn="True"
+                         TextWrapping="NoWrap"
+                         FontFamily="Cascadia Code, Fira Code, Consolas, Courier New"
+                         FontSize="11.5"
+                         VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Auto"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Padding="12,10"
+                         Foreground="{StaticResource TextPrimaryBrush}"
+                         SelectionBrush="{StaticResource PrimaryBrush}" />
+            </Border>
+        </Grid>
+
+        <!-- ══ RESPONSE AREA ════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="3" Margin="16,0,16,6">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" Margin="0,0,0,6">
+                <TextBlock DockPanel.Dock="Left"
+                           Text="AI RESPONSE"
+                           FontSize="10"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           VerticalAlignment="Center" />
+                <TextBlock DockPanel.Dock="Right"
+                           Text="Paste the AI reply here, then click Apply"
+                           FontSize="10"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center" />
+            </DockPanel>
+
+            <Border Grid.Row="1"
+                    Background="{StaticResource SurfaceBrush}"
+                    CornerRadius="8"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1">
+                <TextBox Text="{Binding Response, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True"
+                         TextWrapping="NoWrap"
+                         FontFamily="Cascadia Code, Fira Code, Consolas, Courier New"
+                         FontSize="11.5"
+                         VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Auto"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Padding="12,10"
+                         Foreground="{StaticResource TextPrimaryBrush}"
+                         SelectionBrush="{StaticResource PrimaryBrush}"
+                         x:Name="ResponseTextBox" />
+            </Border>
+        </Grid>
+
+        <!-- ══ FOOTER ════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="4"
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="16,10">
+            <DockPanel>
+                <!-- Info tip -->
+                <TextBlock DockPanel.Dock="Left"
+                           Text="💡 Paste this prompt into your AI, then paste the fixed code back into the editor."
+                           FontSize="11"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"
+                           MaxWidth="400" />
+
+                <!-- Action buttons -->
+                <StackPanel DockPanel.Dock="Right"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+
+                    <Button Style="{StaticResource ToolbarAccentButtonStyle}"
+                            Command="{Binding CopyCommand}"
+                            Padding="16,8"
+                            Margin="0,0,8,0"
+                            MinWidth="180"
+                            MinHeight="36"
+                            FontSize="13"
+                            FontWeight="SemiBold">
+                        <TextBlock Text="{Binding CopyButtonText}" />
+                    </Button>
+
+                    <Button Content="✅  Apply"
+                            Click="ApplyButton_Click"
+                            IsEnabled="{Binding HasResponse}"
+                            Style="{StaticResource ToolbarButtonStyle}"
+                            Padding="16,8"
+                            Margin="0,0,8,0"
+                            MinWidth="90"
+                            MinHeight="36"
+                            FontSize="13"
+                            FontWeight="SemiBold" />
+
+                    <Button Content="Close"
+                            Click="CloseButton_Click"
+                            Style="{StaticResource ToolbarButtonStyle}"
+                            Padding="16,8"
+                            MinWidth="80"
+                            MinHeight="36"
+                            FontSize="13" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

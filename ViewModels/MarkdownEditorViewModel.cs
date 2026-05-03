@@ -58,6 +58,7 @@ namespace MarkdownEditor.ViewModels
             NavigateToLineCommand = new RelayCommand(OnNavigateToLine);
             OpenPreviewCommand = new RelayCommand(OnOpenPreview);
             GenerateAiPromptCommand = new RelayCommand(OnGenerateAiPrompt);
+            GenerateMermaidFixPromptCommand = new RelayCommand(OnGenerateMermaidFixPrompt);
 
             MarkdownText = GetDefaultDocument();
             IsModified = false;
@@ -76,6 +77,13 @@ namespace MarkdownEditor.ViewModels
         /// progress window and running its async generation process.
         /// </summary>
         public event Action? RequestGenerateAiPrompt;
+
+        /// <summary>
+        /// Raised when the user clicks "Fix Mermaid with AI".
+        /// The view handler extracts the Mermaid block at the current cursor position
+        /// and opens the prompt generation window.
+        /// </summary>
+        public event Action? RequestGenerateMermaidFixPrompt;
 
         // Events for the View (editor integration)
         public event Action? RequestUndo;
@@ -209,6 +217,7 @@ namespace MarkdownEditor.ViewModels
         public ICommand NavigateToLineCommand { get; }
         public ICommand OpenPreviewCommand { get; }
         public ICommand GenerateAiPromptCommand { get; }
+        public ICommand GenerateMermaidFixPromptCommand { get; }
 
         /// <summary>
         /// Load markdown content from an external source (e.g. database).
@@ -265,6 +274,11 @@ namespace MarkdownEditor.ViewModels
         private void OnGenerateAiPrompt()
         {
             RequestGenerateAiPrompt?.Invoke();
+        }
+
+        private void OnGenerateMermaidFixPrompt()
+        {
+            RequestGenerateMermaidFixPrompt?.Invoke();
         }
 
         private void OnNavigateToLine()
