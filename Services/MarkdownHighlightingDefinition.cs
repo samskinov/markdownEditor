@@ -47,6 +47,7 @@ namespace MarkdownEditor.Services
     <Color name=""Quote""          foreground=""#9496A1"" fontStyle=""italic""/>
     <Color name=""ListMarker""     foreground=""#6366F1"" fontWeight=""bold""/>
     <Color name=""HorizontalRule"" foreground=""#C0C2CC""/>
+    <Color name=""DataUri""        foreground=""#C0C2CC"" fontSize=""8pt""/>
 
     <RuleSet>
 
@@ -83,7 +84,10 @@ namespace MarkdownEditor.Services
         <Rule color=""Italic"">\*[^\s*\n][^\n*]*?\*(?!\*)</Rule>
         <Rule color=""Italic"">_[^\s_\n][^\n_]*?_(?!_)</Rule>
 
-        <!-- ⑧ Images (before links to capture the prefix !) -->
+        <!-- ⑧ Data URIs — dim long embedded base64 strings -->
+        <Rule color=""DataUri"">data:image/[a-z]+;base64,[A-Za-z0-9+/=]{40,}</Rule>
+
+        <!-- ⑨ Images (before links to capture the prefix !) -->
         <Rule color=""Image"">!\[[^\]\n]*\]\([^)\n]*\)</Rule>
 
         <!-- ⑨ Inline links [text](url) -->

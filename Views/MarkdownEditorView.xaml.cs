@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -80,6 +81,8 @@ namespace MarkdownEditor.Views
                 _viewModel.RequestNavigateToLine -= OnRequestNavigateToLine;
                 _viewModel.SaveFailed -= OnSaveFailed;
                 _viewModel.RequestGenerateMermaidFixPrompt -= OnRequestGenerateMermaidFixPrompt;
+                _viewModel.RequestEmbedImage -= OnRequestEmbedImage;
+                _viewModel.RequestEmbedImageFromClipboard -= OnRequestEmbedImageFromClipboard;
             }
 
             _viewModel = e.NewValue as MarkdownEditorViewModel;
@@ -97,6 +100,8 @@ namespace MarkdownEditor.Views
                 _viewModel.RequestNavigateToLine += OnRequestNavigateToLine;
                 _viewModel.SaveFailed += OnSaveFailed;
                 _viewModel.RequestGenerateMermaidFixPrompt += OnRequestGenerateMermaidFixPrompt;
+                _viewModel.RequestEmbedImage += OnRequestEmbedImage;
+                _viewModel.RequestEmbedImageFromClipboard += OnRequestEmbedImageFromClipboard;
 
                 _isUpdatingFromViewModel = true;
                 MarkdownTextEditor.Text = _viewModel.MarkdownText;
@@ -336,6 +341,125 @@ namespace MarkdownEditor.Views
                 var updatedMarkdown = MermaidBlockExtractor.ReplaceBlockContent(markdown, block, fixedCode);
                 MarkdownTextEditor.Text = updatedMarkdown;
             }
+        }
+
+        // ─── Embed Image ────────────────────────────────────
+
+        private async void OnRequestEmbedImage()
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Images|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.webp;*.tiff;*.tif",
+                Title  = "Select an image to embed"
+            };
+            if (dlg.ShowDialog() != true) return;
+
+            string dataUri;
+            try
+            {
+                dataUri = await Task.Run(() => ImageEmbedder.EncodeFile(dlg.FileName));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not embed image: {ex.Message}",
+                    "Embed image", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var sizeMB = dataUri.Length / (1024.0 * 1024.0);
+            if (sizeMB > 2.0)
+            {
+                var warn = MessageBox.Show(
+                    $"The encoded image is {sizeMB:F1} MB. Large embeddings may slow editing.\n\nEmbed anyway?",
+                    "Large Image", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (warn != MessageBoxResult.Yes) return;
+            }
+
+            var altText = System.IO.Path.GetFileNameWithoutExtension(dlg.FileName);
+            InsertEmbeddedImage(dataUri, altText);
+        }
+
+        private async void OnRequestEmbedImageFromClipboard()
+        {
+            if (!Clipboard.ContainsImage())
+            {
+                MessageBox.Show(
+                    "No image found on the clipboard.\n\nCopy an image first (e.g. screenshot, Ctrl+C on an image).",
+                    "Embed from clipboard",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            var bitmapSource = Clipboard.GetImage();
+            if (bitmapSource == null)
+            {
+                MessageBox.Show("Could not read the clipboard image.",
+                    "Embed from clipboard", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Convert WPF BitmapSource → PNG bytes → ImageSharp.
+            // Clipboard must be accessed on the UI thread; only the encoding is offloaded.
+            string dataUri;
+            try
+            {
+                var pngEncoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                pngEncoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmapSource));
+
+                byte[] bytes;
+                using (var pngStream = new System.IO.MemoryStream())
+                {
+                    pngEncoder.Save(pngStream);
+                    bytes = pngStream.ToArray();
+                }
+
+                dataUri = await Task.Run(() =>
+                {
+                    using var ms = new System.IO.MemoryStream(bytes);
+                    return ImageEmbedder.EncodeStream(ms);
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not embed clipboard image: {ex.Message}",
+                    "Embed from clipboard", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            InsertEmbeddedImage(dataUri, "clipboard-image");
+        }
+
+        private void InsertEmbeddedImage(string dataUri, string altText)
+        {
+            var current = MarkdownTextEditor.Text;
+            var parsed  = EmbeddedImagesBlock.Parse(current);
+            var id      = EmbeddedImagesBlock.NextId(parsed.images);
+
+            MarkdownTextEditor.Document.BeginUpdate();
+            try
+            {
+                var insertion = $"![{altText}][{id}]";
+                var caret = MarkdownTextEditor.CaretOffset;
+                MarkdownTextEditor.Document.Insert(caret, insertion);
+                MarkdownTextEditor.CaretOffset = caret + insertion.Length;
+
+                var withRef = MarkdownTextEditor.Text;
+                var updated = EmbeddedImagesBlock.Upsert(withRef, id, dataUri);
+                if (updated != withRef)
+                {
+                    var keepCaret = MarkdownTextEditor.CaretOffset;
+                    MarkdownTextEditor.Document.Replace(0, withRef.Length, updated);
+                    if (keepCaret <= MarkdownTextEditor.Document.TextLength)
+                        MarkdownTextEditor.CaretOffset = keepCaret;
+                }
+            }
+            finally
+            {
+                MarkdownTextEditor.Document.EndUpdate();
+            }
+
+            MarkdownTextEditor.Focus();
         }
 
         // ─── TOC Navigation ──────────────────────────────────

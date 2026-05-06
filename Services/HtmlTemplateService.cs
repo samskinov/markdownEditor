@@ -192,6 +192,125 @@ img {
     opacity: 0.6;
 }
 
+/* ── TOC Sidebar ──────────────────────────────────────────── */
+#toc-toggle {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 1001;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #57606a;
+    box-shadow: 0 1px 4px rgba(31,35,40,0.12);
+    transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+}
+#toc-toggle:hover {
+    transform: scale(1.08);
+    background: rgba(255,255,255,0.95);
+    box-shadow: 0 2px 8px rgba(31,35,40,0.16);
+}
+
+#toc-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    width: 280px;
+    height: 100vh;
+    background: rgba(255,255,255,0.82);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-right: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 2px 0 16px rgba(31,35,40,0.08);
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    padding-bottom: 24px;
+}
+#toc-sidebar.open {
+    transform: translateX(0);
+}
+
+#toc-header {
+    padding: 16px 16px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #9496a1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+#toc-count {
+    font-size: 11px;
+    font-weight: 500;
+    color: #9496a1;
+    background: rgba(0,0,0,0.04);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+#toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+#toc-list a {
+    display: block;
+    padding: 5px 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #57606a;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#toc-list a[data-level=""1""] { padding-left: 12px; border-left-color: rgba(99,102,241,0.2); }
+#toc-list a[data-level=""2""] { padding-left: 28px; border-left-color: rgba(124,127,238,0.2); }
+#toc-list a[data-level=""3""] { padding-left: 44px; border-left-color: rgba(146,149,240,0.2); }
+#toc-list a[data-level=""4""],
+#toc-list a[data-level=""5""],
+#toc-list a[data-level=""6""] { padding-left: 60px; border-left-color: rgba(180,182,245,0.2); }
+
+#toc-list a:hover {
+    background: rgba(99,102,241,0.06);
+    color: #24292f;
+}
+#toc-list a.active {
+    font-weight: 600;
+    color: #6366F1;
+    border-left-color: #6366F1;
+    background: rgba(99,102,241,0.08);
+}
+
+@media (max-width: 767px) {
+    #toc-sidebar { width: 100vw; }
+    #toc-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.3);
+        z-index: 999;
+    }
+    #toc-backdrop.show { display: block; }
+}
+
 @media print {
     html, body {
         height: auto;
@@ -247,6 +366,8 @@ img {
     #live-indicator {
         display: none;
     }
+
+    #toc-toggle, #toc-sidebar, #toc-backdrop { display: none !important; }
 }
 </style>
 <script src=""https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js""></script>
@@ -385,12 +506,23 @@ mermaid.initialize({
 marked.use({ gfm: true, breaks: false });
 
 var _sourceLine = 0;
+var _headingSlugs = {};
 marked.use({
     renderer: {
         heading(token) {
             _sourceLine++;
             var text = this.parser.parseInline(token.tokens);
-            return '<h' + token.depth + ' data-source-line=""' + _sourceLine + '"">' + text + '</h' + token.depth + '>';
+            var slug = text.toLowerCase()
+                .replace(/<[^>]+>/g, '')
+                .replace(/[^\w\u00C0-\u024F]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            if (_headingSlugs[slug] !== undefined) {
+                _headingSlugs[slug]++;
+                slug = slug + '-' + _headingSlugs[slug];
+            } else {
+                _headingSlugs[slug] = 0;
+            }
+            return '<h' + token.depth + ' id=""' + slug + '"" data-source-line=""' + _sourceLine + '"">' + text + '</h' + token.depth + '>';
         },
         paragraph(token) {
             _sourceLine++;
@@ -434,9 +566,11 @@ function sanitizeHtml(html) {
 
 function renderContent(md, cursorLine) {
     _sourceLine = 0;
+    _headingSlugs = {};
     var savedScrollY = window.scrollY;
     document.getElementById('content').innerHTML = sanitizeHtml(marked.parse(md));
     renderMermaidBlocks();
+    buildToc();
     if (cursorLine && cursorLine > 0) {
         scrollToSourceLine(cursorLine);
     } else {
@@ -493,6 +627,109 @@ async function renderMermaidBlocks() {
     }
 }
 
+// ── TOC Navigation ──────────────────────────────────────────────
+var _tocToggle   = document.getElementById('toc-toggle');
+var _tocSidebar  = document.getElementById('toc-sidebar');
+var _tocList     = document.getElementById('toc-list');
+var _tocCount    = document.getElementById('toc-count');
+var _tocBackdrop = document.getElementById('toc-backdrop');
+var _tocOpen     = false;
+
+function toggleToc() {
+    _tocOpen = !_tocOpen;
+    _tocSidebar.classList.toggle('open', _tocOpen);
+    _tocToggle.textContent = _tocOpen ? '✕' : '☰';
+    if (_tocBackdrop) _tocBackdrop.classList.toggle('show', _tocOpen);
+    if (_tocOpen) updateActiveHeading();
+}
+
+_tocToggle.addEventListener('click', toggleToc);
+if (_tocBackdrop) _tocBackdrop.addEventListener('click', toggleToc);
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 't' || e.key === 'T') {
+        var tag = document.activeElement ? document.activeElement.tagName : '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        toggleToc();
+    }
+});
+
+function buildToc() {
+    var headings = document.querySelectorAll('#content h1, #content h2, #content h3, #content h4, #content h5, #content h6');
+    _tocList.innerHTML = '';
+    var count = 0;
+    headings.forEach(function(h) {
+        count++;
+        var a = document.createElement('a');
+        a.href = '#' + (h.id || '');
+        a.setAttribute('data-level', h.tagName.charAt(1));
+        a.textContent = h.textContent;
+        a.addEventListener('click', function(e) {
+            e.preventDefault();
+            var target = document.getElementById(h.id);
+            if (target) {
+                var y = target.getBoundingClientRect().top + window.scrollY - 60;
+                window.scrollTo({ top: y, behavior: 'smooth' });
+            }
+            if (window.innerWidth < 768 && _tocOpen) toggleToc();
+        });
+        _tocList.appendChild(a);
+    });
+    _tocCount.textContent = count + (count === 1 ? ' heading' : ' headings');
+    setupScrollSpy();
+}
+
+var _scrollObserver = null;
+
+function setupScrollSpy() {
+    if (_scrollObserver) _scrollObserver.disconnect();
+    var headings = document.querySelectorAll('#content h1, #content h2, #content h3, #content h4, #content h5, #content h6');
+    if (!headings.length) return;
+
+    _scrollObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) setActiveHeading(entry.target.id);
+        });
+    }, { root: null, rootMargin: '-80px 0px -60% 0px', threshold: 0 });
+
+    headings.forEach(function(h) { _scrollObserver.observe(h); });
+    updateActiveHeading();
+}
+
+function updateActiveHeading() {
+    var headings = document.querySelectorAll('#content h1, #content h2, #content h3, #content h4, #content h5, #content h6');
+    if (!headings.length) return;
+    var active = null;
+    var threshold = window.scrollY + 100;
+    for (var i = headings.length - 1; i >= 0; i--) {
+        if (headings[i].getBoundingClientRect().top + window.scrollY <= threshold) {
+            active = headings[i];
+            break;
+        }
+    }
+    setActiveHeading(active ? active.id : headings[0].id);
+}
+
+function setActiveHeading(id) {
+    var links = _tocList.querySelectorAll('a');
+    var found = false;
+    for (var i = 0; i < links.length; i++) {
+        var isActive = links[i].getAttribute('href') === '#' + id;
+        links[i].classList.toggle('active', isActive);
+        if (isActive && !found) {
+            found = true;
+            links[i].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+    }
+}
+
+var _scrollSpyRaf = null;
+window.addEventListener('scroll', function() {
+    if (!_tocOpen) return;
+    if (_scrollSpyRaf) cancelAnimationFrame(_scrollSpyRaf);
+    _scrollSpyRaf = requestAnimationFrame(updateActiveHeading);
+}, { passive: true });
+
 var _lastVersion = -1;
 var _cursorLine = 1;
 
@@ -533,6 +770,15 @@ window.addEventListener('beforeprint', function() {
 <body>
 <div id=""content""><p style=""color:#9496a1;text-align:center;margin-top:3em;"">Loading preview…</p></div>
 <div id=""live-indicator"">● live</div>
+<button id=""toc-toggle"" title=""Table of Contents (T)"">☰</button>
+<div id=""toc-backdrop""></div>
+<nav id=""toc-sidebar"">
+    <div id=""toc-header"">
+        <span>Outline</span>
+        <span id=""toc-count"">0 headings</span>
+    </div>
+    <ul id=""toc-list""></ul>
+</nav>
 </body>
 </html>";
 

@@ -23,6 +23,8 @@
         <KeyBinding Key="K" Modifiers="Ctrl" Command="{Binding InsertLinkCommand}" />
         <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}" />
         <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding RedoCommand}" />
+        <KeyBinding Key="I" Modifiers="Ctrl+Shift" Command="{Binding EmbedImageCommand}" />
+        <KeyBinding Key="V" Modifiers="Ctrl+Shift" Command="{Binding EmbedImageFromClipboardCommand}" />
     </UserControl.InputBindings>
 
     <Grid>
@@ -108,6 +110,16 @@
                         <Separator Style="{StaticResource ToolbarDropdownSeparatorStyle}" />
                         <MenuItem Header="🔗  Link (Ctrl+K)"  Style="{StaticResource ToolbarDropdownItemStyle}" Command="{Binding InsertLinkCommand}" />
                         <MenuItem Header="🖼  Image"          Style="{StaticResource ToolbarDropdownItemStyle}" Command="{Binding InsertImageCommand}" />
+                        <MenuItem Header="�️  Image from file…"
+                                  Style="{StaticResource ToolbarDropdownItemStyle}"
+                                  Command="{Binding EmbedImageCommand}"
+                                  InputGestureText="Ctrl+Shift+I"
+                                  ToolTip="Embed an image file as base64 inline (Ctrl+Shift+I)" />
+                        <MenuItem Header="📋  Image from clipboard"
+                                  Style="{StaticResource ToolbarDropdownItemStyle}"
+                                  Command="{Binding EmbedImageFromClipboardCommand}"
+                                  InputGestureText="Ctrl+Shift+V"
+                                  ToolTip="Embed a clipboard image as base64 inline (Ctrl+Shift+V)" />
                         <MenuItem Header="▦  Table"           Style="{StaticResource ToolbarDropdownItemStyle}" Command="{Binding InsertTableCommand}" />
                         <MenuItem Header="―  Horizontal rule" Style="{StaticResource ToolbarDropdownItemStyle}" Command="{Binding InsertHorizontalRuleCommand}" />
                         <Separator Style="{StaticResource ToolbarDropdownSeparatorStyle}" />

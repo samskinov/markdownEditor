@@ -44,6 +44,8 @@ namespace MarkdownEditor.ViewModels
             InsertCodeBlockCommand = new RelayCommand(() => RequestInsertText?.Invoke("```csharp\n// your code here\n```\n"));
             InsertLinkCommand = new RelayCommand(() => RequestInsertText?.Invoke("[Link text](https://example.com)"));
             InsertImageCommand = new RelayCommand(() => RequestInsertText?.Invoke("![Alt text](https://example.com/image.png)"));
+            EmbedImageCommand = new RelayCommand(() => RequestEmbedImage?.Invoke());
+            EmbedImageFromClipboardCommand = new RelayCommand(() => RequestEmbedImageFromClipboard?.Invoke());
             InsertTableCommand = new RelayCommand(() => RequestInsertText?.Invoke("| Column 1 | Column 2 | Column 3 |\n|-----------|-----------|----------|\n| Cell      | Cell      | Cell     |\n| Cell      | Cell      | Cell     |\n"));
             InsertHorizontalRuleCommand = new RelayCommand(() => RequestInsertText?.Invoke("\n---\n"));
             InsertMermaidBlockCommand = new RelayCommand(() => RequestInsertText?.Invoke("```mermaid\ngraph TD\n    A[Start] --> B{Condition ?}\n    B -->|Yes| C[Action 1]\n    B -->|No| D[Action 2]\n    C --> E[End]\n    D --> E\n```\n"));
@@ -92,6 +94,8 @@ namespace MarkdownEditor.ViewModels
         public event Action<string, string, string>? RequestInsertSurround;
         public event Action<string>? RequestInsertAtLineStart;
         public event Action<int>? RequestNavigateToLine;
+        public event Action? RequestEmbedImage;
+        public event Action? RequestEmbedImageFromClipboard;
 
         // Event raised when Markdown content changes (raw markdown, rendered client-side)
         public event Action<string>? MarkdownContentChanged;
@@ -208,6 +212,8 @@ namespace MarkdownEditor.ViewModels
         public ICommand InsertCodeBlockCommand { get; }
         public ICommand InsertLinkCommand { get; }
         public ICommand InsertImageCommand { get; }
+        public ICommand EmbedImageCommand { get; }
+        public ICommand EmbedImageFromClipboardCommand { get; }
         public ICommand InsertTableCommand { get; }
         public ICommand InsertHorizontalRuleCommand { get; }
         public ICommand InsertMermaidBlockCommand { get; }

@@ -9,11 +9,24 @@ namespace MarkdownEditor.Services
     {
         public void UpdateFoldings(FoldingManager manager, TextDocument document)
         {
-            var newFoldings = CreateFoldings(document);
+            var (newFoldings, embedStartOffset) = CreateFoldings(document);
             manager.UpdateFoldings(newFoldings, -1);
+
+            // Tag the embedded-images fold so its identity survives future updates.
+            if (embedStartOffset >= 0)
+            {
+                foreach (var fold in manager.AllFoldings)
+                {
+                    if (fold.StartOffset == embedStartOffset)
+                    {
+                        fold.Tag = "embedded-images";
+                        break;
+                    }
+                }
+            }
         }
 
-        private static IEnumerable<NewFolding> CreateFoldings(TextDocument document)
+        private static (List<NewFolding> foldings, int embedStartOffset) CreateFoldings(TextDocument document)
         {
             var foldings = new List<NewFolding>();
             var headingStarts = new Stack<int>();
@@ -101,8 +114,40 @@ namespace MarkdownEditor.Services
                 }
             }
 
+            // ── Embedded-images block fold ─────────────────────────────────
+            int embedStartOffset = -1;
+            var docText = document.Text;
+            var (images, blockStart, blockEnd) = EmbeddedImagesBlock.Parse(docText);
+
+            if (blockStart >= 0 && blockEnd > 0 && blockEnd <= document.TextLength)
+            {
+                var startLine = document.GetLineByOffset(blockStart);
+                var endLine   = document.GetLineByOffset(blockEnd - 1);
+
+                // Approximate decoded size: base64 length × 0.75.
+                long totalBytes = 0;
+                foreach (var uri in images.Values)
+                {
+                    int comma = uri.IndexOf(',');
+                    if (comma >= 0)
+                        totalBytes += (long)((uri.Length - comma - 1) * 0.75);
+                }
+
+                int    count  = images.Count;
+                string plural = count == 1 ? "" : "s";
+                string szStr  = ImageEmbedder.FormatSize(totalBytes);
+                string title  = $"\U0001F5BC  embedded-images  ({count} image{plural}, {szStr})";
+
+                embedStartOffset = startLine.Offset;
+                foldings.Add(new NewFolding(startLine.Offset, endLine.Offset + endLine.Length)
+                {
+                    Name          = title,
+                    DefaultClosed = true
+                });
+            }
+
             foldings.Sort((a, b) => a.StartOffset.CompareTo(b.StartOffset));
-            return foldings;
+            return (foldings, embedStartOffset);
         }
 
         private static int GetHeadingLevel(string line)
