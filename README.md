@@ -189,11 +189,3 @@ Note: a recent `dotnet build` may warn about known advisories for `SixLabors.Ima
 
 ---
 
-If you'd like, I can also:
-
-- produce a minimal sample WPF host app showing the editor embedded and saving/loading markdown
-- create a short test harness that demonstrates `MarkdownViewer` and `HtmlTemplateService` with custom titles
-- update the template to inline `marked.js`/`mermaid.js` for offline usage
-
-Tell me which of the above you'd like next.
-
