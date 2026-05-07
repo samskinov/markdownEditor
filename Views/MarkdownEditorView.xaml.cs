@@ -459,6 +459,11 @@ namespace MarkdownEditor.Views
                 MarkdownTextEditor.Document.EndUpdate();
             }
 
+            // Immediately collapse the embedded-images fold (DefaultClosed = true
+            // in the folding strategy only applies when the fold is first created).
+            if (_foldingManager != null && _foldingStrategy != null)
+                _foldingStrategy.UpdateFoldings(_foldingManager, MarkdownTextEditor.Document);
+
             MarkdownTextEditor.Focus();
         }
 

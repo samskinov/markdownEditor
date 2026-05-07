@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\preview-template.html" />
     <EmbeddedResource Include="Scripts\marked.min.js" />
     <EmbeddedResource Include="Scripts\mermaid.min.js" />
   </ItemGroup>

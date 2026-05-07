@@ -1,230 +1,199 @@
----
+## MarkdownEditor
 
-## Nouveautés (avril 2026)
+A lightweight WPF Markdown editor component with live preview and Mermaid diagram support. Targets .NET Framework 4.8 and ships as a small, self-contained library intended for embedding in WPF apps.
 
-- **Bouton "AI Prompt"** : Un bouton "🤖 AI Prompt" est disponible dans la barre d'outils de l'éditeur. Il déclenche la commande `GenerateAiPromptCommand` du ViewModel.
-- **Intégration BusyWindow** : Pour les traitements longs (génération de prompt IA, etc.), utilisez la fenêtre `BusyWindow` (MVVM-friendly, thread-safe, thème moderne). Instanciez un `BusyWindowViewModel`, affichez la fenêtre, puis ajoutez les étapes de progression depuis n'importe quel thread.
-- **API d'intégration IA** : Abonnez-vous à l'événement `RequestGenerateAiPrompt` du `MarkdownEditorViewModel` pour lancer votre logique IA et afficher la progression à l'utilisateur via le BusyWindow.
-- **Word-wrap Mermaid** : Les graphes Mermaid dans le preview HTML supportent le retour à la ligne automatique dans les nœuds/objets (option `wrap: true`). Le rendu à l'écran et à l'impression est fidèle, sans page blanche parasite.
-
-### Exemple d'intégration IA avec BusyWindow
-
-```csharp
-// Dans votre code d'intégration :
-_editorVm.RequestGenerateAiPrompt += () => {
-    var busyVm = new BusyWindowViewModel("Génération du prompt IA…", "Analyse du document en cours");
-    var win = new BusyWindow(busyVm, ownerWindow);
-    win.Show();
-    _ = Task.Run(async () => {
-        busyVm.AddStep("Extraction des sections…");
-        // ... traitement IA ...
-        busyVm.Complete("Prompt généré avec succès !");
-    });
-};
-```
+Table of contents
+- Features
+- Quick Start
+- Embedding in your WPF app
+- Preview modes (live vs static)
+- API reference (key classes)
+- Embedded images and folding behavior
+- Template and resources
+- Build & development
+- Security & notes
 
 ---
 
-# MarkdownEditor — Markdown + Mermaid WPF
+## Features
 
-Lightweight WPF component for editing Markdown with live preview and Mermaid diagrams. Targets **.NET Framework 4.8**.
+- AvalonEdit-based editor with Markdown syntax highlighting and folding
+- Live preview served to the default browser (no WebView2 / Chromium required)
+- Client-side Markdown rendering with `marked.js` and Mermaid diagrams via `mermaid.js`
+- Embedded image support (images are encoded as base64 data URIs and stored in a reference block)
+- Programmatic viewer (`MarkdownViewer`) for quick display of documentation to end users
+- Export to standalone HTML via `HtmlTemplateService` (optionally set the browser tab title)
 
-Features
-- AvalonEdit-based Markdown editor with syntax highlighting
-- Live preview served to the default browser (no WebView2 runtime required)
-- Client-side Markdown rendering using `marked.js` and Mermaid diagrams via `mermaid.js`
-- Small footprint: no bundled Chromium or CefSharp binaries
+## Quick Start
 
-## Architecture
+1. Add a project reference to the `MarkdownEditor` project/assembly.
+2. Drop the `MarkdownEditorView` into your XAML window.
+3. Wire up the `MarkdownEditorViewModel` and handle `SaveRequested` if you need to persist content.
 
-```
-MarkdownEditor/
-├── Mvvm/                     # MVVM base (ViewModelBase, RelayCommand)
-├── Models/                   # MermaidExample, MarkdownSnippet
-├── Services/                 # PreviewHttpServer, HtmlTemplateService, helpers
-├── ViewModels/               # MarkdownEditorViewModel, help VMs
-├── Views/                    # MarkdownEditorView and help windows
-└── Themes/                   # ResourceDictionary with modern styles
-```
-
-Pattern: MVVM (view models contain state, views contain UI glue). Code-behind is limited to UI plumbing (AvalonEdit wiring, preview server lifecycle).
-
-## Dependencies
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| Microsoft.NETFramework.ReferenceAssemblies.net48 | 1.x | Target framework reference (build-time)
-| AvalonEdit | 6.3.0.90 | Editor control (line numbers, syntax highlighting)
-
-Notes:
-- The old server-side Markdown conversion (Markdig) has been removed — Markdown is rendered client-side with `marked.js`.
-- The preview does not require `WebView2` or any Chromium runtime; it uses an embedded `HttpListener` and the system default browser.
-
-## Prerequisites
-
-- .NET Framework 4.8 SDK installed.
-- Internet access (for `marked.js` and `mermaid.js` CDNs). For offline scenarios, host those scripts locally or embed them as resources.
-
-## Integration
-
-### 1) Add a project reference
-
-Reference `MarkdownEditor.csproj` from your WPF application.
-
-### 2) Use the control in XAML
+Embedding example (XAML):
 
 ```xml
 <Window xmlns:md="clr-namespace:MarkdownEditor.Views;assembly=MarkdownEditor">
-  <Grid>
-    <md:MarkdownEditorView x:Name="MdEditor" />
-  </Grid>
+    <Grid>
+        <md:MarkdownEditorView x:Name="MdEditor" />
+    </Grid>
 </Window>
 ```
 
-### 3) Wire the ViewModel and Save handling
+Wiring in code-behind (C#):
 
 ```csharp
 using MarkdownEditor.ViewModels;
 
 public partial class MainWindow : Window
 {
-    private readonly MarkdownEditorViewModel _editorVm;
+        private readonly MarkdownEditorViewModel _editorVm;
 
-    public MainWindow()
-    {
-        InitializeComponent();
+        public MainWindow()
+        {
+                InitializeComponent();
+                _editorVm = new MarkdownEditorViewModel();
+                MdEditor.DataContext = _editorVm;
 
-        _editorVm = new MarkdownEditorViewModel();
-        MdEditor.DataContext = _editorVm;
+                // Save handling
+                _editorVm.SaveRequested += OnSaveRequested;
+        }
 
-        // Handle Save (user clicks Save in the toolbar)
-        _editorVm.SaveRequested += OnSaveRequested;
-
-        // Load initial content
-        _editorVm.LoadContent("# Hello\n\nStart writing...");
-    }
-
-    private void OnSaveRequested()
-    {
-        var markdown = _editorVm.GetContent();
-        SaveToDatabase(markdown);
-        _editorVm.MarkAsSaved();
-    }
-
-    private void SaveToDatabase(string md) { /* your logic */ }
+        private void OnSaveRequested()
+        {
+                var markdown = _editorVm.GetContent();
+                // persist markdown (file, DB, etc.)
+                _editorVm.MarkAsSaved();
+        }
 }
 ```
 
-## ViewModel public API (summary)
+## Preview modes
 
-| Member | Description |
-|--------|-------------|
-| `LoadContent(string)` | Load Markdown into the editor |
-| `GetContent()` | Get current Markdown text |
-| `MarkAsSaved()` | Mark document as saved |
-| `SaveRequested` (event) | Fired when user clicks Save |
-| `OpenPreviewCommand` | Command bound to the toolbar preview button (opens browser preview)
-| `RequestOpenPreview` (event) | Raised when preview should open (view handles server lifecycle)
-| `MarkdownContentChanged` (event) | Fired when the Markdown text changes (raw markdown) |
-| `IsPreviewActive` | True when a preview server is active |
-| `IsModified` | Indicates whether the document has unsaved changes |
+There are two primary ways to show rendered Markdown to users:
 
-Note: The view handles the preview server lifecycle. Programmatic preview/control is provided via `MarkdownViewer` (see below).
+1. Live preview (dynamic, with auto-refresh) using `MarkdownViewer`.
+2. Static/standalone HTML export using `HtmlTemplateService.BuildStandaloneHtml` / `SaveAndOpenStandaloneHtml`.
 
-## Shortcuts
+### Live preview (recommended for editing)
 
-| Shortcut | Action |
-|---------:|:------|
-| Ctrl+S | Save |
-| Ctrl+B | Bold |
-| Ctrl+I | Italic |
-| Ctrl+K | Insert link |
-| Ctrl+Z | Undo |
-| Ctrl+Y | Redo |
-
-## Preview & Printing
-
-- Preview is served by an embedded HTTP server (`PreviewHttpServer`) and rendered client-side in the default browser using `marked.js` (Markdown) and `mermaid.js` (diagrams).
-- Live-reload: the browser polls `GET /content` every ~400 ms and updates the DOM when the version changes.
-- To print or save as PDF, use the browser's Print dialog (Ctrl+P) when the preview is open, or generate a standalone HTML using `HtmlTemplateService.BuildStandaloneHtml(markdown)` and print that file.
-
-
-## Displaying Markdown to users: two modes
-
-### 1. Live preview (dynamic, with live reload)
-
-Use the programmatic viewer API to show Markdown in the default browser with live updates (requires a local HTTP server):
+`MarkdownViewer` starts a small local HTTP server and serves a preview page that renders Markdown client-side. Use:
 
 ```csharp
 using MarkdownEditor.Services;
 
-// Open the browser and display markdown (starts server if needed)
+// Start the server (if needed) and open the default browser (or focus it)
 MarkdownViewer.ShowAndOpen(markdown);
 
-// Update the content without opening a new tab (browser auto-refreshes)
+// Update content programmatically (browser refreshes)
 MarkdownViewer.Show(updatedMarkdown);
 
-// Stop the preview server (only when you are sure the user no longer needs the preview)
+// When your app exits, stop the server
 MarkdownViewer.Close();
-
-// Inspect server URL
-var url = MarkdownViewer.ServerUrl; // e.g. http://localhost:54321/
 ```
 
-This is useful for dynamic documentation, tutorials, or any scenario where you want the browser to update automatically as the Markdown changes. Do not call `Close()` while the user is still viewing the page, or live reload will break.
+This mode keeps a single browser tab open and refreshes content automatically (polling ~400ms). The server URL is available as `MarkdownViewer.ServerUrl`.
 
+### Static / standalone HTML (good for distribution, printing)
 
-### 2. Display-only mode (static HTML, no server)
-
-For a simple, read-only display (no live reload, no server), just call:
+Create a single HTML file that you can ship to users or open in a browser directly. The HTML is generated from a template resource (see below).
 
 ```csharp
 using MarkdownEditor.Services;
 
-// The easiest way: one line, no manual Process.Start, no temp file handling
-HtmlTemplateService.SaveAndOpenStandaloneHtml(markdown);
+// Generate and open a standalone preview with a custom browser tab title
+// The 'title' parameter sets the <title> of the HTML — useful when opening in Edge/Chrome.
+var path = HtmlTemplateService.SaveAndOpenStandaloneHtml(markdown, "User Guide — MyApp");
+
+// Or just get the HTML string and control how/where you save/open it
+var html = HtmlTemplateService.BuildStandaloneHtml(markdown, "User Guide — MyApp");
+File.WriteAllText("my-docs.html", html, Encoding.UTF8);
+Process.Start(new ProcessStartInfo { FileName = "msedge", Arguments = $"--new-window \"my-docs.html\"", UseShellExecute = true });
 ```
 
-This method:
-- Generates a static HTML file from your Markdown
-- Saves it in the Windows temp folder
-- Opens it automatically in the default browser
-- Returns the file path if you want to track or delete it later
+If `title` is `null` or empty, the default title `Markdown Preview` is used. The title is HTML-escaped to avoid injection.
 
-You do not need to manage Process.Start, file paths, or cleanup unless you want to. This is the recommended way for display-only scenarios, exports, or when you do not want to start a server.
+## API reference (selected)
 
-## Export / Standalone HTML
+- `MarkdownEditorViewModel` — primary ViewModel used by the view.
+    - `LoadContent(string)` — load Markdown into the editor programmatically.
+    - `GetContent()` — returns current Markdown text.
+    - `MarkAsSaved()` — mark document as saved after external persistence.
+    - `SaveRequested` (event) — raised when user clicks Save.
+    - Commands for inserting Markdown constructs and embedding images are exposed (e.g., `EmbedImageCommand`).
 
-Create a static HTML file (baked-in Markdown) using:
+- `MarkdownViewer` — small helper to show Markdown in the default browser.
+    - `Show(string markdown)` — update content without opening a new tab.
+    - `ShowAndOpen(string markdown)` — update content and open/focus browser.
+    - `Close()` — stop the preview server.
 
-```csharp
-var html = HtmlTemplateService.BuildStandaloneHtml(markdown);
-File.WriteAllText("preview.html", html, Encoding.UTF8);
-Process.Start(new ProcessStartInfo { FileName = "preview.html", UseShellExecute = true });
-```
+- `HtmlTemplateService`
+    - `BuildStandaloneHtml(string markdown, string? title = null)` — returns the full HTML string for the given Markdown. `title` sets the HTML `<title>`.
+    - `SaveAndOpenStandaloneHtml(string markdown, string? title = null)` — writes the HTML to a temp file and opens it in the default browser; returns the path.
 
-The generated HTML contains `marked.js` + `mermaid.js` usage and will render diagrams on load.
+- `ImageEmbedder`
+    - `EncodeFile(string path)` / `EncodeStream(Stream)` — encodes an image to a `data:image/webp;base64,...` URI. Images are resized so the largest side ≤ 1600px (no upscale) and encoded to WebP (lossy, quality ~80).
 
-## Extension points & notes
+- `EmbeddedImagesBlock`
+    - `Parse(string markdown)` — parse the reference-style embedded-images block and return existing entries.
+    - `NextId(...)` — generate the next `img-N` id.
+    - `Upsert(string markdown, string id, string dataUri)` — insert/update the embedded images block and return the updated markdown.
 
-- Theme: modify `Themes/ModernTheme.xaml` to customize colors and load a dark variant.
-- Syntax highlighting: implemented in `Services/MarkdownHighlightingDefinition.cs` (embedded XSHD).
-- Client-side rendering: `HtmlTemplateService` uses `marked.js` and `mermaid.js` from CDN by default. For offline usage, host these files locally and adjust the template.
-- Preview server: `Services/PreviewHttpServer.cs` uses `HttpListener` and serves the live template on a random localhost port. `MarkdownViewer` provides a convenient wrapper.
+## Embedded images behavior
 
-## Build
+- When the user embeds an image (from file dialog or clipboard), images are encoded to WebP and inserted as a reference link like `![alt][img-1]` with the actual `data:` URI stored in an `<!-- embedded-images:start -->` / `<!-- embedded-images:end -->` block at the bottom of the document.
+- The folding strategy creates a single fold for the embedded images block and marks it as folded by default. The fold shows a summary like: "embedded-images (3 images, 1.2 MB)".
+- We also trigger an immediate fold refresh after insertion so the block collapses right away. To change this behaviour, modify `Services/MarkdownFoldingStrategy.cs` (the `DefaultClosed` property) or remove the immediate update call in `Views/MarkdownEditorView.xaml.cs`.
 
-From the repository root:
+## Template & resources
+
+- The HTML preview template is stored as an embedded resource at `Resources/preview-template.html` inside the `MarkdownEditor` assembly.
+- `HtmlTemplateService` lazily loads that resource from the assembly. The resource name is `{{AssemblyName}}.Resources.preview-template.html`.
+- By default the template references `marked.js` and `mermaid.js` via CDN. If you want offline usage, either:
+    1. Edit `Resources/preview-template.html` to inline local copies of the scripts, or
+    2. Use the `Services/EmbeddedScriptProvider` to get embedded script contents for `Scripts/marked.min.js` and `Scripts/mermaid.min.js` and then modify the template at runtime before serving.
+
+The template contains client-side sanitization and Mermaid configuration (theme variables, `wrap: true`, `securityLevel: 'strict'`) — see `Resources/preview-template.html`.
+
+## Build & Development
+
+- Requirements: Visual Studio or MSBuild with .NET Framework 4.8 targeting packs.
+- Build with:
 
 ```bash
-dotnet build MarkdownEditor/MarkdownEditor.csproj -c Debug
+dotnet build -c Debug
 ```
 
-## Migration notes (what changed in this branch)
+### NuGet packages
 
-- Removed server-side Markdown conversion (`Markdig`) — rendering moved to the browser via `marked.js`.
-- Removed any dependency on `WebView2` / Chromium; preview is opened in the system default browser via a tiny HTTP server.
-- Added `MarkdownViewer` for quick read-only display.
+- `AvalonEdit` (editor control)
+- `SixLabors.ImageSharp` (image decoding/encoding)
 
-If you want, I can also provide a short sample application that demonstrates embedding the editor and using `MarkdownViewer` programmatically.
+Note: a recent `dotnet build` may warn about known advisories for `SixLabors.ImageSharp` version 2.1.9. Consider updating the package to a patched version if required by your security policy.
+
+## Security & notes
+
+- The preview template performs client-side sanitization (`sanitizeHtml`) to remove `<script>`, inline event handlers and `javascript:` links prior to inserting rendered content. This reduces XSS risk when displaying untrusted input, but you should still validate and sanitize content according to your application's threat model.
+- `HtmlTemplateService.BuildStandaloneHtml` escapes the provided `title` to avoid HTML injection when setting the `<title>` element.
+- Embedded images are stored inline as base64 data URIs; be mindful of large images (the editor warns if encoded size > 2MB). Consider storing large images externally and using regular image URLs for large assets.
+
+## Where to look in the codebase
+
+- View: `Views/MarkdownEditorView.xaml` and `Views/MarkdownEditorView.xaml.cs`
+- ViewModel: `ViewModels/MarkdownEditorViewModel.cs`
+- Preview server: `Services/PreviewHttpServer.cs`
+- Template loader: `Services/HtmlTemplateService.cs` (loads `Resources/preview-template.html`)
+- Script provider: `Services/EmbeddedScriptProvider.cs` (embedded `marked`/`mermaid`)
+- Image embedder: `Services/ImageEmbedder.cs` and `Services/EmbeddedImagesBlock.cs`
+- Folding strategy: `Services/MarkdownFoldingStrategy.cs`
+
+---
+
+If you'd like, I can also:
+
+- produce a minimal sample WPF host app showing the editor embedded and saving/loading markdown
+- create a short test harness that demonstrates `MarkdownViewer` and `HtmlTemplateService` with custom titles
+- update the template to inline `marked.js`/`mermaid.js` for offline usage
+
+Tell me which of the above you'd like next.
 
