@@ -628,11 +628,11 @@ async function renderMermaidBlocks() {
 }
 
 // ── TOC Navigation ──────────────────────────────────────────────
-var _tocToggle   = document.getElementById('toc-toggle');
-var _tocSidebar  = document.getElementById('toc-sidebar');
-var _tocList     = document.getElementById('toc-list');
-var _tocCount    = document.getElementById('toc-count');
-var _tocBackdrop = document.getElementById('toc-backdrop');
+var _tocToggle   = null;
+var _tocSidebar  = null;
+var _tocList     = null;
+var _tocCount    = null;
+var _tocBackdrop = null;
 var _tocOpen     = false;
 
 function toggleToc() {
@@ -643,8 +643,15 @@ function toggleToc() {
     if (_tocOpen) updateActiveHeading();
 }
 
-_tocToggle.addEventListener('click', toggleToc);
-if (_tocBackdrop) _tocBackdrop.addEventListener('click', toggleToc);
+document.addEventListener('DOMContentLoaded', function() {
+    _tocToggle   = document.getElementById('toc-toggle');
+    _tocSidebar  = document.getElementById('toc-sidebar');
+    _tocList     = document.getElementById('toc-list');
+    _tocCount    = document.getElementById('toc-count');
+    _tocBackdrop = document.getElementById('toc-backdrop');
+    if (_tocToggle) _tocToggle.addEventListener('click', toggleToc);
+    if (_tocBackdrop) _tocBackdrop.addEventListener('click', toggleToc);
+});
 
 document.addEventListener('keydown', function(e) {
     if (e.key === 't' || e.key === 'T') {
