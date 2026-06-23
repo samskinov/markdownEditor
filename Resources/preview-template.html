@@ -191,7 +191,12 @@ img {
 }
 .mermaid.mermaid-scaled svg {
     transform: scale(var(--mermaid-scale, 1));
-    transform-origin: top center;
+    /* top LEFT (not center): the SVG keeps its full natural layout width, which
+       is wider than the reserved scale-box. Scaling from the centre of that wide
+       box pushes the shrunk diagram to the right (out of the frame, and clipped
+       in print). From top-left the scaled content fills the box exactly, and the
+       box itself is centred via margin:0 auto. */
+    transform-origin: top left;
 }
 
 /* Wrapper used to reserve correct height for the scaled (transformed) svg so
@@ -376,18 +381,26 @@ img {
         padding: 0;
     }
 
-    /* Print: scale uniformly to page width via the same JS-driven variable so
-       labels shrink with the diagram and are never truncated or clipped. */
-    .mermaid svg {
+    /* Print: drop the screen's transform/scale-box scaling entirely and let the
+       SVG scale proportionally to the printed page width through its own viewBox
+       (max-width:100%). This is page-size independent (A4, Letter, margins…) — no
+       reliance on a JS-measured width — and scales the whole diagram uniformly
+       (text, labels, arrows, legends), so nothing is ever clipped or truncated.
+       !important is required to override the inline width/height/transform the
+       screen-fit JS sets on the svg and the scale-box. */
+    .mermaid svg,
+    .mermaid.mermaid-scaled svg {
         display: block;
         margin: 0 auto;
         overflow: visible;
-        transform: scale(var(--mermaid-print-scale, var(--mermaid-scale, 1)));
-        transform-origin: top center;
+        transform: none !important;
+        width: auto !important;
+        height: auto !important;
+        max-width: 100% !important;
     }
-    .mermaid.mermaid-scaled svg {
-        transform: scale(var(--mermaid-print-scale, var(--mermaid-scale, 1)));
-        transform-origin: top center;
+    .mermaid-scale-box {
+        width: auto !important;
+        height: auto !important;
     }
     .mermaid svg foreignObject { overflow: visible; }
 
@@ -663,6 +676,36 @@ async function renderMermaidBlocks() {
     fitAllMermaid();
 }
 
+// Expand the SVG's viewBox to the true bounding box of everything it actually
+// draws — including htmlLabel <foreignObject>s, edge/arrow labels, legends and
+// cluster titles that Mermaid sometimes positions slightly outside its declared
+// width/height. This guarantees the framed .mermaid container fully encloses the
+// diagram (nothing spills outside the box) while never shrinking content, so no
+// label is ever truncated. Must run while the SVG is in the document (getBBox
+// needs a rendered element). Idempotent: getBBox reflects content, not viewBox.
+function normalizeMermaidSvg(svg) {
+    var bbox;
+    try { bbox = svg.getBBox(); } catch (e) { return; }
+    if (!bbox || !bbox.width || !bbox.height) return;
+    var pad = 4;
+    var x1 = bbox.x - pad, y1 = bbox.y - pad;
+    var x2 = bbox.x + bbox.width + pad, y2 = bbox.y + bbox.height + pad;
+    // Union with the current viewBox: only ever grow the box (to swallow content
+    // drawn outside it), never shrink it (which would drop Mermaid's own padding).
+    var vb = svg.viewBox && svg.viewBox.baseVal;
+    if (vb && vb.width) {
+        x1 = Math.min(x1, vb.x);
+        y1 = Math.min(y1, vb.y);
+        x2 = Math.max(x2, vb.x + vb.width);
+        y2 = Math.max(y2, vb.y + vb.height);
+    }
+    var w = x2 - x1, h = y2 - y1;
+    svg.setAttribute('viewBox', x1 + ' ' + y1 + ' ' + w + ' ' + h);
+    svg.setAttribute('width', w);
+    svg.setAttribute('height', h);
+    svg.style.maxWidth = 'none';
+}
+
 // Uniformly scale each Mermaid SVG to fit its container width. Using a CSS
 // transform (not width:100%) means the text scales with the diagram and is
 // never re-laid-out, so labels/legends/arrows are never truncated. A wrapper
@@ -682,13 +725,16 @@ function fitMermaid(container) {
     }
     container.style.height = '';
 
+    // Make the SVG box enclose its full content before we measure/scale it.
+    normalizeMermaidSvg(svg);
+
     var cs = getComputedStyle(container);
     var padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
     var avail = container.clientWidth - padX;
+    var vb = svg.viewBox && svg.viewBox.baseVal;
     var natural = svg.getBoundingClientRect();
-    var naturalW = svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width
-        ? svg.viewBox.baseVal.width : natural.width;
-    var naturalH = natural.height;
+    var naturalW = vb && vb.width ? vb.width : natural.width;
+    var naturalH = vb && vb.height ? vb.height : natural.height;
     if (!naturalW || avail <= 0) return;
 
     var scale = avail / naturalW;
@@ -851,44 +897,27 @@ function startSSE() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    startSSE();
-});
-
-// Recompute scaling for print so each diagram fits the printed page width and
-// stays fully legible (labels never truncated). beforeprint runs synchronously
-// in Chromium/Edge before the print layout is captured.
-function fitMermaidForPrint() {
-    var containers = document.querySelectorAll('#content .mermaid');
-    for (var i = 0; i < containers.length; i++) {
-        var c = containers[i];
-        var box = c.querySelector('.mermaid-scale-box');
-        var svg = c.querySelector('svg');
-        if (!svg) continue;
-        var naturalW = svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width
-            ? svg.viewBox.baseVal.width
-            : (box ? parseFloat(box.style.width) : svg.getBoundingClientRect().width);
-        var cs = getComputedStyle(c);
-        var padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-        var avail = c.clientWidth - padX;
-        if (!naturalW || avail <= 0) continue;
-        var scale = Math.min(1, avail / naturalW);
-        c.style.setProperty('--mermaid-print-scale', String(scale));
-        if (box) {
-            box.style.width = (naturalW * scale) + 'px';
-            var ratio = svg.getBBox ? 0 : 0;
-            var vb = svg.viewBox && svg.viewBox.baseVal;
-            if (vb && vb.width) box.style.height = (vb.height * scale) + 'px';
-        }
+    // The live preview is served over http(s) and streams updates via SSE.
+    // A standalone export (print / Save-as-PDF) is opened as a local file, where
+    // EventSource('/events') would resolve to file:///events and throw a CORS
+    // error (and nothing would ever render). On file:// we instead render the
+    // markdown embedded in #__md_data. This keeps the template self-sufficient
+    // regardless of how the page is loaded.
+    var isServed = location.protocol === 'http:' || location.protocol === 'https:';
+    if (isServed) {
+        startSSE();
+    } else {
+        var data = document.getElementById('__md_data');
+        renderContent(data ? data.textContent : '');
     }
-}
-
-window.addEventListener('beforeprint', fitMermaidForPrint);
-window.addEventListener('afterprint', function() {
-    var containers = document.querySelectorAll('#content .mermaid');
-    for (var i = 0; i < containers.length; i++)
-        containers[i].style.removeProperty('--mermaid-print-scale');
-    fitAllMermaid();
 });
+
+// Print scaling is handled entirely by @media print CSS (the SVG scales to the
+// page width through its own viewBox via max-width:100%). That is page-size
+// independent and needs no JS-measured width — which was the cause of diagrams
+// being clipped in the printed/PDF output. After printing we just recompute the
+// on-screen fit in case the layout changed.
+window.addEventListener('afterprint', fitAllMermaid);
 </script>
 </head>
 <body>

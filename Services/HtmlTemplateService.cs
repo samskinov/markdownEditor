@@ -40,18 +40,15 @@ namespace MarkdownEditor.Services
 
             const string placeholder = @"<p style=""color:#9496a1;text-align:center;margin-top:3em;"">Loading preview…</p>";
             const string liveIndicator = @"<div id=""live-indicator"">● live</div>";
-            const string sseScript = @"document.addEventListener('DOMContentLoaded', function() {
-    startSSE();
-});";
-            const string initScript = @"document.addEventListener('DOMContentLoaded', function() {
-    var d = document.getElementById('__md_data');
-    if (d) renderContent(d.textContent);
-});";
 
+            // The markdown is embedded in #__md_data. We do NOT need to patch the
+            // SSE bootstrap here: the template only starts SSE when served over
+            // http(s); opened as a file:// page (this standalone export) it renders
+            // #__md_data directly. That keeps the live/standalone contract robust
+            // and impossible to break with a stale string match.
             var html = LiveTemplate
                 .Replace(placeholder, $"<script type=\"text/plain\" id=\"__md_data\">{safeMd}</script>")
-                .Replace(liveIndicator, "")
-                .Replace(sseScript, initScript);
+                .Replace(liveIndicator, "");
 
             if (!string.IsNullOrWhiteSpace(title))
                 html = html.Replace("<title>Markdown Preview</title>",
